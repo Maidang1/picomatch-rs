@@ -29,3 +29,22 @@ fn main() {
     let final_value = example.consume();
     println!("Final value: {}", final_value);
 }
+
+// pub fn to_regex(
+//     source: &str,
+//     options: Option<&RegexOptions>,
+// ) -> Result<regex::Regex, regex::Error> {
+//     let binding = RegexOptions::default();
+//     let opts = options.unwrap_or(&binding);
+
+//     RegexBuilder::new(source)
+//         .case_insensitive(opts.nocase.unwrap_or(false))
+//         .build()
+//         .or_else(|err| {
+//             if opts.debug.unwrap_or(false) {
+//                 Err(err)
+//             } else {
+//                 Ok(Regex::new(r"$^").unwrap())
+//             }
+//         })
+// }

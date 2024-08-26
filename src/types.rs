@@ -1,3 +1,5 @@
+use regex::{Error, Regex};
+
 use crate::utils::StringOrArray;
 
 pub struct PicomatchOptions {
@@ -6,7 +8,7 @@ pub struct PicomatchOptions {
     capture: Option<bool>,
     pub contains: Option<bool>,
     cwd: Option<String>,
-    debug: Option<bool>,
+    pub debug: Option<bool>,
     dot: Option<bool>,
     // expandRange: todo function
     failglob: Option<bool>,
@@ -20,7 +22,7 @@ pub struct PicomatchOptions {
     max_length: Option<bool>,
     nobrace: Option<bool>,
     nobracket: Option<bool>,
-    nocase: Option<bool>,
+    pub nocase: Option<bool>,
     nodupes: Option<bool>,
     noext: Option<bool>,
     noextglob: Option<bool>,
@@ -39,4 +41,28 @@ pub struct PicomatchOptions {
     unescape: Option<bool>,
     unixify: Option<bool>,
     pub windows: Option<bool>,
+}
+
+pub struct State {
+    pub output: String,
+    pub negated: bool,
+}
+
+pub struct CompileReResult {
+    pub regex: Result<Regex, Error>,
+    pub state: Option<State>,
+}
+
+pub enum CompileReReturn {
+    String(String),
+    CompileReResult(CompileReResult),
+}
+
+impl CompileReReturn {
+    pub fn is_string(&self) -> bool {
+        match self {
+            CompileReReturn::String(_) => true,
+            _ => false,
+        }
+    }
 }
