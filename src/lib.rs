@@ -3,7 +3,7 @@ mod types;
 mod utils;
 mod parse;
 mod constants;
-
+mod scan;
 use regex::{Regex, RegexBuilder};
 use types::{CompileReResult, CompileReReturn, PicomatchOptions, State};
 use utils::StringOrArray;

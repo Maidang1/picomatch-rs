@@ -148,40 +148,40 @@ lazy_static! {
     pub static ref CHAR_LOWERCASE_Z: u8 = 122; // z
 
     // 括号字符
-    pub static ref CHAR_LEFT_PARENTHESES: u8 = 40; // (
-    pub static ref CHAR_RIGHT_PARENTHESES: u8 = 41; // )
+    pub static ref CHAR_LEFT_PARENTHESES: i32 = 40; // (
+    pub static ref CHAR_RIGHT_PARENTHESES: i32 = 41; // )
 
     // 星号字符
-    pub static ref CHAR_ASTERISK: u8 = 42; // *
+    pub static ref CHAR_ASTERISK: i32 = 42; // *
 
     // 非字母字符
     pub static ref CHAR_AMPERSAND: u8 = 38; // &
-    pub static ref CHAR_AT: u8 = 64; // @
-    pub static ref CHAR_BACKWARD_SLASH: u8 = 92; // \
+    pub static ref CHAR_AT: i32 = 64; // @
+    pub static ref CHAR_BACKWARD_SLASH: i32 = 92; // \
     pub static ref CHAR_CARRIAGE_RETURN: u8 = 13; // \r
     pub static ref CHAR_CIRCUMFLEX_ACCENT: u8 = 94; // ^
     pub static ref CHAR_COLON: u8 = 58; // :
-    pub static ref CHAR_COMMA: u8 = 44; // ,
-    pub static ref CHAR_DOT: u8 = 46; // .
+    pub static ref CHAR_COMMA: i32 = 44; // ,
+    pub static ref CHAR_DOT: i32 = 46; // .
     pub static ref CHAR_DOUBLE_QUOTE: u8 = 34; // "
     pub static ref CHAR_EQUAL: u8 = 61; // =
-    pub static ref CHAR_EXCLAMATION_MARK: u8 = 33;
+    pub static ref CHAR_EXCLAMATION_MARK: i32 = 33;
     pub static ref CHAR_FORM_FEED: u8 = 12; // \f
-    pub static ref CHAR_FORWARD_SLASH: u8 = 47; // /
+    pub static ref CHAR_FORWARD_SLASH: i32 = 47; // /
     pub static ref CHAR_GRAVE_ACCENT: u8 = 96; // `
     pub static ref CHAR_HASH: u8 = 35; // #
     pub static ref CHAR_HYPHEN_MINUS: u8 = 45; // -
     pub static ref CHAR_LEFT_ANGLE_BRACKET: u8 = 60; // <
-    pub static ref CHAR_LEFT_CURLY_BRACE: u8 = 123; // {
-    pub static ref CHAR_LEFT_SQUARE_BRACKET: u8 = 91; // [
+    pub static ref CHAR_LEFT_CURLY_BRACE: i32 = 123; // {
+    pub static ref CHAR_LEFT_SQUARE_BRACKET: i32 = 91; // [
     pub static ref CHAR_LINE_FEED: u8 = 10; // \n
     pub static ref CHAR_NO_BREAK_SPACE: u16 = 160; // \u00A0
     pub static ref CHAR_PERCENT: u8 = 37; // %
-    pub static ref CHAR_PLUS: u8 = 43; // +
-    pub static ref CHAR_QUESTION_MARK: u8 = 63; // ?
+    pub static ref CHAR_PLUS: i32 = 43; // +
+    pub static ref CHAR_QUESTION_MARK: i32 = 63; // ?
     pub static ref CHAR_RIGHT_ANGLE_BRACKET: u8 = 62; // >
-    pub static ref CHAR_RIGHT_CURLY_BRACE: u8 = 125; // }
-    pub static ref CHAR_RIGHT_SQUARE_BRACKET: u8 = 93; // ]
+    pub static ref CHAR_RIGHT_CURLY_BRACE: i32 = 125; // }
+    pub static ref CHAR_RIGHT_SQUARE_BRACKET: i32 = 93; // ]
     pub static ref CHAR_SEMICOLON: u8 = 59; // ;
     pub static ref CHAR_SINGLE_QUOTE: u8 = 39; // '
     pub static ref CHAR_SPACE: u8 = 32; //

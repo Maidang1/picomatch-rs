@@ -1,3 +1,5 @@
+use core::str;
+use regex::Regex;
 use std::collections::HashMap;
 
 use crate::constants::*;
@@ -84,4 +86,8 @@ pub fn extglob_chars(chars: &HashMap<&str, &str>) -> HashMap<char, ExtglobChar> 
     );
 
     map
+}
+
+pub fn remove_back_slashes(input: &String) -> String {
+    REGEX_REMOVE_BACKSLASH.replace_all(&input, "").to_string()
 }
