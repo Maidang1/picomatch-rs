@@ -1,6 +1,6 @@
 use crate::{constants::*, utils::remove_back_slashes};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Default)]
 struct ScanState {
     prefix: String,
     input: String,
@@ -16,6 +16,8 @@ struct ScanState {
     is_bracket: bool,
     max_depth: Option<i32>,
     tokens: Option<Vec<Token>>,
+    slashes: Option<Vec<i32>>,
+    parts: Option<Vec<String>>,
 }
 
 #[derive(Default)]
@@ -43,8 +45,6 @@ struct Token {
     pub negated: Option<bool>,
 }
 
-struct Part {}
-
 struct Scan {}
 
 fn is_path_separator(code: &i32) -> bool {
@@ -67,7 +67,7 @@ impl Scan {
 
         let mut slashes: Vec<i32> = Vec::new();
         let mut tokens: Vec<Token> = Vec::new();
-        // let mut parts: Vec<Part> = Vec::new();
+        let mut parts: Vec<String> = Vec::new();
 
         let mut str = input.clone();
         let mut index = -1 as i32;
@@ -89,11 +89,12 @@ impl Scan {
         let mut token = Token::default();
 
         let eos = |index: &i32, length: &i32| index >= length;
+
         let peek = |index: &i32| {
-            str.chars()
-                .nth((index + 1).try_into().unwrap())
-                .map(|c| c as i32)
-                .unwrap()
+            str.as_bytes()
+                .get((index + 1) as usize)
+                .copied()
+                .unwrap_or(0) as i32
         };
         let advance = |index: &mut i32, code: &mut i32, prev: &mut i32| -> Option<u32> {
             *prev = *code;
@@ -109,12 +110,13 @@ impl Scan {
                 back_slashes = true;
                 token.back_slashes = true;
                 code = advance(&mut index, &mut code, &mut prev).unwrap() as i32;
+
                 if code == *CHAR_LEFT_CURLY_BRACE {
                     brace_escaped = true;
                 }
             }
 
-            if brace_escaped == true || code == *CHAR_LEFT_CURLY_BRACE {
+            if brace_escaped || code == *CHAR_LEFT_CURLY_BRACE {
                 braces = braces + 1;
 
                 while eos(&index, &length) != true {
@@ -131,7 +133,7 @@ impl Scan {
                         continue;
                     }
 
-                    if brace_escaped != true && code == *CHAR_DOT {
+                    if !brace_escaped && code == *CHAR_DOT {
                         code = advance(&mut index, &mut code, &mut prev).unwrap() as i32;
                         if code == *CHAR_DOT {
                             is_brace = true;
@@ -243,6 +245,7 @@ impl Scan {
                 }
                 is_glob = true;
                 token.is_glob = true;
+                finished = true;
 
                 if scan_to_end {
                     continue;
@@ -370,8 +373,8 @@ impl Scan {
         }
 
         let mut state = ScanState {
-            prefix,
-            input,
+            prefix: prefix.clone(),
+            input: input.clone(),
             start,
             glob,
             base,
@@ -384,6 +387,8 @@ impl Scan {
             negated_extglob,
             max_depth: None,
             tokens: None,
+            slashes: None,
+            parts: None,
         };
 
         if options.tokens == Some(true) {
@@ -391,8 +396,79 @@ impl Scan {
             if !is_path_separator(&code) {
                 tokens.push(token.clone());
             }
-            state.tokens = Some(tokens);
+            state.tokens = Some(tokens.clone());
         }
+
+        if options.parts == Some(true) || options.tokens == Some(true) {
+            let mut prev_index: Option<i32> = None;
+
+            for idx in 0..slashes.len() {
+                let n = if prev_index.is_some() {
+                    Some(prev_index.unwrap() + 1)
+                } else {
+                    Some(start.clone())
+                };
+
+                let n = n.unwrap_or(0) as i32;
+                let i = slashes[idx].clone();
+                let mut value = String::new();
+
+                if n < i {
+                    value = input[n as usize..i as usize].to_string();
+                }
+
+                if options.tokens == Some(true) {
+                    if idx == 0 && start != 0 {
+                        tokens[idx].is_prefix = Some(true);
+                        tokens[idx].value = prefix.clone();
+                    } else {
+                        tokens[idx].value = value.clone();
+                    }
+                    if tokens[idx].is_prefix != Some(true) {
+                        tokens[idx].depth = if tokens[idx].is_glob_star {
+                            i32::MAX
+                        } else {
+                            1
+                        };
+                    }
+                }
+
+                if idx != 0 || value != "" {
+                    parts.push(value.clone());
+                }
+                prev_index = Some(i.clone());
+            }
+
+            if prev_index.is_some()
+                && prev_index.unwrap() > 0
+                && prev_index.unwrap() < input.len() as i32
+            {
+                let n = prev_index.unwrap() + 1;
+                let value = input[n as usize..].to_string();
+                parts.push(value.clone());
+
+                if options.tokens == Some(true) {
+                    let mut last = tokens.last().unwrap().clone();
+                    let mut depth: i32 = 1;
+                    let len = token.value.len();
+                    last.value = value.clone();
+                    if last.is_prefix != Some(true) {
+                        depth = if last.is_glob_star {
+                            i32::MAX - state.max_depth.unwrap_or(0)
+                        } else {
+                            1
+                        };
+                        last.depth = depth.clone();
+                    }
+                    tokens[len - 1] = last;
+                    state.max_depth = Some(state.max_depth.unwrap_or(0) + depth.clone());
+                }
+            }
+
+            state.slashes = Some(slashes);
+            state.parts = Some(parts);
+        }
+
         state
     }
 }
