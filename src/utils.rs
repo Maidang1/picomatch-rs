@@ -91,11 +91,16 @@ pub fn remove_back_slashes(input: &String) -> String {
     REGEX_REMOVE_BACKSLASH.replace_all(&input, "").to_string()
 }
 
-pub fn remove_prefix<'a>(input: &'a str, state: &'a mut ParseState) -> &'a str {
+pub trait HasPrefix {
+    fn has_prefix(&self, prefix: &str) -> &String;
+    fn set_prefix(&mut self, prefix: String);
+}
+
+pub fn remove_prefix<'a, T: HasPrefix>(input: &'a str, state: &'a mut T) -> &'a str {
     let mut output = input;
     if output.starts_with("./") {
         output = &output[2..];
-        state.prefix = "./".to_string();
+        state.set_prefix("./".to_string());
     }
     output
 }

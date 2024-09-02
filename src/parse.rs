@@ -1,14 +1,15 @@
-use crate::utils::remove_prefix;
+use crate::utils::{remove_prefix, HasPrefix};
 use crate::{
     constants::{self, *},
     utils::{extglob_chars, glob_chars},
 };
+use regex::Regex;
 use std::cell::{RefCell, RefMut};
 use std::cmp::min;
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
-struct ParseOptions {
+pub struct ParseOptions {
     max_length: Option<i32>,
     prepend: Option<String>,
     windows: bool,
@@ -17,6 +18,8 @@ struct ParseOptions {
     bash: Option<bool>,
     noext: Option<bool>,
     noextglob: Option<bool>,
+    noglobstar: Option<bool>,
+    strict_slashes: Option<bool>,
 }
 
 struct Bos {
@@ -155,7 +158,7 @@ fn parse(input: String, mut options: ParseOptions) {
     let mut state = Rc::new(RefCell::new(state));
     let mut state_ref = state.borrow_mut();
 
-    input = remove_prefix(&input, &mut state_ref).to_string();
+    // input = remove_prefix(&input, &mut state_ref).to_string();
     len = input.len() as i32;
 
     let mut ext_globa: Vec<_> = vec!["1"];
@@ -227,6 +230,167 @@ fn parse(input: String, mut options: ParseOptions) {
         state.start = state.start + 1;
         return true;
     };
+}
 
+// pub trait HasPrefix {
+//     fn set_prefix(&mut self, prefix: String);
+// }
 
+#[derive(Debug, Default)]
+struct FastPathState {
+    negated: bool,
+    prefix: String,
+}
+
+impl HasPrefix for FastPathState {
+    fn set_prefix(&mut self, prefix: String) {
+        self.prefix = prefix;
+    }
+    fn has_prefix(&self, prefix: &str) -> &String {
+        &self.prefix
+    }
+}
+
+pub fn fast_paths(input: String, options: &ParseOptions) -> Option<String> {
+    let mut max = if options.max_length.is_some() {
+        min(*MAX_LENGTH, options.max_length.unwrap())
+    } else {
+        *MAX_LENGTH
+    };
+
+    let mut len = input.len() as i32;
+    if len > max {
+        panic!("Input is too long. Max length is {}", max);
+    }
+
+    let mut input: String = input.clone();
+    if let Some(initial_input) = REPLACEMENTS.get(Box::leak(input.clone().into_boxed_str())) {
+        input = initial_input.to_string()
+    };
+
+    let glob_chars = glob_chars(options.windows);
+    let one_char = glob_chars.get("ONE_CHAR").unwrap().to_string();
+    let dot_literal = glob_chars.get("DOT_LITERAL").unwrap().to_string();
+    let slash_literal = glob_chars.get("SLASH_LITERAL").unwrap().to_string();
+    let slash_literal_clone = slash_literal.clone();
+
+    let no_dot = if options.dot.unwrap_or(false) {
+        glob_chars.get("NO_DOTS").unwrap().to_string()
+    } else {
+        glob_chars.get("NO_DOT").unwrap().to_string()
+    };
+
+    let slash_dot = if options.dot.unwrap_or(false) {
+        glob_chars.get("NO_DOTS_SLASH").unwrap().to_string()
+    } else {
+        glob_chars.get("NO_DOT").unwrap().to_string()
+    };
+
+    let capture = if options.capture.unwrap_or(false) {
+        "".to_string()
+    } else {
+        "?:".to_string()
+    };
+
+    let mut state = FastPathState::default();
+
+    let mut star = if options.bash.unwrap_or(false) {
+        ".*?".to_string()
+    } else {
+        glob_chars.get("STAR").unwrap().to_string()
+    };
+
+    if options.capture.unwrap_or(false) {
+        star = format!("({})", star);
+    }
+
+    let glob_star = |opts: &ParseOptions| {
+        if opts.noglobstar == Some(true) {
+            return format!("{}", star);
+        } else {
+            let dot = if opts.dot.unwrap_or(false) {
+                glob_chars.get("DOTS_SLASH").unwrap().to_string()
+            } else {
+                glob_chars.get("DOT_LITERAL").unwrap().to_string()
+            };
+            return format!("({}(?:(?!{}{}).)*?)", capture, *START_ANCHOR, dot);
+        }
+    };
+
+    let create: Rc<RefCell<Option<Box<dyn Fn(&String, &String) -> Option<String>>>>> =
+        Rc::new(RefCell::new(None));
+
+    let create_clone = create.clone();
+    *create_clone.borrow_mut() = Some(Box::new(
+        move |str: &String, star: &String| -> Option<String> {
+            let str = str.as_str();
+
+            let result = match str {
+                "*" => {
+                    format!("{}{}{}", no_dot, one_char, star)
+                }
+                ".*" => {
+                    format!("{}{}{}", dot_literal, one_char, star)
+                }
+                "*.*" => {
+                    format!("{}{}{}{}{}", no_dot, star, dot_literal, one_char, star)
+                }
+                "*/*" => {
+                    format!(
+                        "{}{}{}{}{}{}",
+                        no_dot, star, slash_literal, one_char, slash_dot, star
+                    )
+                }
+                "**" => {
+                    format!("{}{}", no_dot, glob_star(&options))
+                }
+                "**/*" => {
+                    format!(
+                        "(?:{}{}{}{}{}{}",
+                        no_dot,
+                        glob_star(&options),
+                        slash_literal,
+                        slash_dot,
+                        one_char,
+                        star
+                    )
+                }
+                "**/.*" => {
+                    format!(
+                        "(?:{}{}{}?{}{}{}",
+                        no_dot,
+                        glob_star(&options),
+                        slash_literal,
+                        dot_literal,
+                        one_char,
+                        star
+                    )
+                }
+                _ => {
+                    let re = Regex::new(r"^(.*?)\.(\w+)$").unwrap();
+                    if !re.is_match(str) {
+                        return None;
+                    }
+                    let result = re.captures(str).unwrap();
+                    let match1 = result.get(1).map(|m| m.as_str()).unwrap();
+                    let match2 = result.get(2).map(|m| m.as_str()).unwrap();
+                    let source = create.borrow().as_ref().unwrap()(&match1.to_string(), star);
+                    if source.is_none() {
+                        return None;
+                    }
+                    format!("{}{}{}", source.unwrap(), *DOT_LITERAL, match2.to_string())
+                }
+            };
+
+            Some(result)
+        },
+    ));
+
+    let output = remove_prefix(input.clone().as_str(), &mut state).to_string();
+    let source = create_clone.borrow().as_ref().unwrap()(&output.clone(), &star.clone());
+
+    if source.is_some() && options.strict_slashes != Some(true) {
+        return Some(format!("{}{}?", source.unwrap(), slash_literal_clone));
+    }
+    source
 }
