@@ -153,7 +153,108 @@ fn should_detect_extglobs_and_globstars() {
         negated: false,
         negated_extglob: false,
         slashes: Some(vec![1, 5, 12, 15]),
-        parts:Some(vec!["foo".to_string(), "@(bar)".to_string(), "**".to_string(), "*.js".to_string()]),
+        parts: Some(vec![
+            "foo".to_string(),
+            "@(bar)".to_string(),
+            "**".to_string(),
+            "*.js".to_string(),
+        ]),
+        max_depth: None,
+        tokens: None,
+        ..ScanState::default()
+    };
+    assert_eq!(res, expected_res);
+}
+
+#[test]
+
+fn should_handle_leading_with_exclamation_point() {
+    let scan = Scan::new();
+    let res: ScanState = scan.scan(
+        "!foo/bar/*.js".to_string(),
+        ScanOptions {
+            ..ScanOptions::default()
+        },
+    );
+    let expected_res = ScanState {
+        prefix: "!".to_string(),
+        input: "!foo/bar/*.js".to_string(),
+        start: 1,
+        base: "foo/bar".to_string(),
+        glob: "*.js".to_string(),
+        is_brace: false,
+        is_bracket: false,
+        is_glob: true,
+        is_glob_star: false,
+        is_ext_glob: false,
+        negated: true,
+        negated_extglob: false,
+        slashes: None,
+        parts: None,
+        max_depth: None,
+        tokens: None,
+        ..ScanState::default()
+    };
+    assert_eq!(res, expected_res);
+}
+
+#[test]
+fn should_detect_negated_ext_globs_at_the_beginning() {
+    let scan = Scan::new();
+    let res: ScanState = scan.scan(
+        "!(foo)*".to_string(),
+        ScanOptions {
+            ..ScanOptions::default()
+        },
+    );
+    let expected_res = ScanState {
+        prefix: "".to_string(),
+        input: "!(foo)*".to_string(),
+        start: 0,
+        base: "".to_string(),
+        glob: "!(foo)*".to_string(),
+        is_brace: false,
+        is_bracket: false,
+        is_glob: true,
+        is_ext_glob: true,
+        is_glob_star: false,
+        negated: false,
+        negated_extglob: true,
+        slashes: None,
+        parts: None,
+        max_depth: None,
+        tokens: None,
+        ..ScanState::default()
+    };
+    assert_eq!(res, expected_res);
+}
+
+
+
+#[test]
+fn should_not_detect_negated_extglobs_in_the_middle() {
+    let scan = Scan::new();
+    let res: ScanState = scan.scan(
+        "test/!(foo)/*".to_string(),
+        ScanOptions {
+            ..ScanOptions::default()
+        },
+    );
+    let expected_res = ScanState {
+        prefix: "".to_string(),
+        input: "test/!(foo)/*".to_string(),
+        start: 0,
+        base: "test".to_string(),
+        glob: "!(foo)/*".to_string(),
+        is_brace: false,
+        is_bracket: false,
+        is_glob: true,
+        is_ext_glob: true,
+        is_glob_star: false,
+        negated: false,
+        negated_extglob: false,
+        slashes: None,
+        parts: None,
         max_depth: None,
         tokens: None,
         ..ScanState::default()

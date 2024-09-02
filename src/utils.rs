@@ -1,8 +1,7 @@
 use core::str;
-use regex::Regex;
 use std::collections::HashMap;
 
-use crate::constants::*;
+use crate::{constants::*, parse::ParseState};
 
 pub enum StringOrArray {
     String(String),
@@ -90,4 +89,13 @@ pub fn extglob_chars(chars: &HashMap<&str, &str>) -> HashMap<char, ExtglobChar> 
 
 pub fn remove_back_slashes(input: &String) -> String {
     REGEX_REMOVE_BACKSLASH.replace_all(&input, "").to_string()
+}
+
+pub fn remove_prefix<'a>(input: &'a str, state: &'a mut ParseState) -> &'a str {
+    let mut output = input;
+    if output.starts_with("./") {
+        output = &output[2..];
+        state.prefix = "./".to_string();
+    }
+    output
 }
