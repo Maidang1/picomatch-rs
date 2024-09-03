@@ -8,18 +8,18 @@ use std::cell::{RefCell, RefMut};
 use std::cmp::min;
 use std::rc::Rc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ParseOptions {
-    max_length: Option<i32>,
-    prepend: Option<String>,
-    windows: bool,
-    capture: Option<bool>,
-    dot: Option<bool>,
-    bash: Option<bool>,
-    noext: Option<bool>,
-    noextglob: Option<bool>,
-    noglobstar: Option<bool>,
-    strict_slashes: Option<bool>,
+    pub max_length: Option<i32>,
+    pub prepend: Option<String>,
+    pub windows: bool,
+    pub capture: Option<bool>,
+    pub dot: Option<bool>,
+    pub bash: Option<bool>,
+    pub noext: Option<bool>,
+    pub noextglob: Option<bool>,
+    pub noglobstar: Option<bool>,
+    pub strict_slashes: Option<bool>,
 }
 
 struct Bos {
@@ -56,7 +56,7 @@ struct ParseToken {
     value: Option<String>,
 }
 
-fn parse(input: String, mut options: ParseOptions) {
+fn parse(input: &String, mut options: ParseOptions) {
     let static_input = Box::leak(input.clone().into_boxed_str());
     let mut input = input.clone();
     if let Some(inner_input) = REPLACEMENTS.get(static_input) {
@@ -251,7 +251,7 @@ impl HasPrefix for FastPathState {
     }
 }
 
-pub fn fast_paths(input: String, options: &ParseOptions) -> Option<String> {
+pub fn fast_paths(input: &String, options: &ParseOptions) -> Option<String> {
     let mut max = if options.max_length.is_some() {
         min(*MAX_LENGTH, options.max_length.unwrap())
     } else {
