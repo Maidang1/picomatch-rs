@@ -96,11 +96,67 @@ pub trait HasPrefix {
     fn set_prefix(&mut self, prefix: String);
 }
 
-pub fn remove_prefix<'a, T: HasPrefix>(input: &'a str, state: &'a mut T) -> &'a str {
-    let mut output = input;
+#[derive(Debug, Default)]
+pub struct State {
+    pub prefix: Option<String>,
+    pub negated: bool,
+}
+pub trait HasPrefixAndNegated {
+    fn prefix(&self) -> &Option<String>;
+    fn negated(&self) -> bool;
+    fn set_prefix(&mut self, prefix: String);
+}
+
+impl HasPrefixAndNegated for State {
+    fn prefix(&self) -> &Option<String> {
+        &self.prefix
+    }
+
+    fn negated(&self) -> bool {
+        self.negated
+    }
+
+    fn set_prefix(&mut self, prefix: String) {
+        self.prefix = Some(prefix);
+    }
+}
+
+/// Remove prefix from a string and update state
+pub fn remove_prefix<T: HasPrefixAndNegated>(input: &str, state: &mut T) -> String {
+    let mut output = input.to_string();
     if output.starts_with("./") {
-        output = &output[2..];
+        output = output[2..].to_string();
         state.set_prefix("./".to_string());
     }
     output
+}
+
+/// Slice a string
+pub fn slice(s: &str, start: isize, end: Option<isize>) -> String {
+    let len = s.chars().count() as isize;
+
+    // 处理负数索引
+    let start = if start < 0 {
+        std::cmp::max(len + start, 0)
+    } else {
+        std::cmp::min(start, len)
+    } as usize;
+
+    let end = match end {
+        Some(e) => {
+            let e = if e < 0 {
+                std::cmp::max(len + e, 0)
+            } else {
+                std::cmp::min(e, len)
+            };
+            e as usize
+        }
+        None => s.chars().count(),
+    };
+
+    // 确保 end >= start
+    let end = std::cmp::max(start, end);
+
+    // 收集字符到新的字符串
+    s.chars().skip(start).take(end - start).collect()
 }

@@ -5,3 +5,4 @@ mod parse;
 mod constants;
 mod scan;
 mod picomatch;
+mod parsev2;
