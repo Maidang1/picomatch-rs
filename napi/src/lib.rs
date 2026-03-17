@@ -64,7 +64,7 @@ fn check_strict_brackets(input: &str) -> Result<()> {
 
     while i < chars.len() {
         let ch = chars[i];
-        if ch == '\\' {
+        if ch == '\\' && i + 1 < chars.len() {
             i += 2;
             continue;
         }
