@@ -455,7 +455,7 @@ fn posix_class_source(name: &str) -> Option<&'static str> {
         "graph" => Some(r"\x21-\x7E"),
         "lower" => Some("a-z"),
         "print" => Some(r"\x20-\x7E "),
-        "punct" => Some(r##"\-!"#$%&'()\*+,./:;<=>?@\[\]^_`{|}~"##),
+        "punct" => Some(r##"\-!"#$%&'()\*+,./:;<=>?@[\]^_`{|}~"##),
         "space" => Some(r" \t\r\n\v\f"),
         "upper" => Some("A-Z"),
         "word" => Some("A-Za-z0-9_"),
@@ -1308,8 +1308,7 @@ fn compile_body_with_context(
                             let new_len = output.len().saturating_sub(slash.len());
                             output.truncate(new_len);
                             output.push_str(&format!(
-                                "(?:{}(?:{}(?:{}{})*)?)?",
-                                slash, globstar, slash, globstar
+                                "(?:{slash}+(?:{globstar}(?:{slash}+{globstar})*)?)?",
                             ));
                         }
                     } else {

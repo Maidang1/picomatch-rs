@@ -95,7 +95,7 @@ const isMatch = (input, patterns, options) => {
 
 const makeRe = (input, options, returnOutput, returnState) => {
   const descriptor = nativeMakeRe(input, stripFunctions(options), returnOutput, returnState);
-  if (!descriptor || returnOutput) return descriptor;
+  if (!descriptor || returnOutput || returnState) return descriptor;
   return new RegExp(descriptor.source, descriptor.flags);
 };
 
