@@ -307,7 +307,10 @@ fn posix_2_bre_tests() {
 
     assert_eq!(is_match("a", "[:al:]", &opts).unwrap_or(false), true);
     assert_eq!(is_match("a", "[[:al:]", &opts).unwrap_or(false), false);
-    assert_eq!(is_match("!", "[abc[:punct:][0-9]", &opts).unwrap_or(false), true);
+    assert_eq!(
+        is_match("!", "[abc[:punct:][0-9]", &opts).unwrap_or(false),
+        true
+    );
 
     assert_is_match("PATH", "[_[:alpha:]]*", opts.clone(), true);
     assert_is_match("PATH", "[_[:alpha:]][_[:alnum:]]*", opts.clone(), true);

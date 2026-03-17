@@ -4217,5 +4217,4 @@ mod tests {
         let opts = default_compile_options();
         assert_is_match(" foo ", "(f|o)+\\b", opts, false);
     }
-
 }

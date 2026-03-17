@@ -1277,7 +1277,11 @@ fn compile_body_with_context(
                             let new_len = output.len().saturating_sub(slash.len());
                             output.truncate(new_len);
                             if options.strict_slashes {
-                                output.push_str(&format!("{}{}", slash, extglob_slashy_body(options)));
+                                output.push_str(&format!(
+                                    "{}{}",
+                                    slash,
+                                    extglob_slashy_body(options)
+                                ));
                             } else {
                                 output.push_str(&format!(
                                     "(?:|(?:{}{}))",

@@ -361,7 +361,6 @@ fn should_match_escaped_quotes() {
     assert_is_match("d", "foo/\"*\"/bar", opts.clone(), false);
     assert_is_match("dd", "foo/\"*\"/bar", opts.clone(), false);
     assert_is_match("de", "foo/\"*\"/bar", opts.clone(), false);
-
 }
 
 #[test]
@@ -644,7 +643,6 @@ fn should_support_character_classes() {
     assert_is_match("beware", "a?c", opts.clone(), false);
     assert_is_match("BewAre", "a?c", opts.clone(), false);
     assert_is_match("a/*", "[^a-c]*", opts.clone(), false);
-
 }
 
 #[test]
@@ -664,9 +662,19 @@ fn should_support_basic_wildmatch_brackets_features() {
 #[test]
 fn should_support_extended_slash_matching_features() {
     let opts = default_compile_options();
-    assert_is_match("foo/bar", "f[^eiu][^eiu][^eiu][^eiu][^eiu]r", opts.clone(), false);
+    assert_is_match(
+        "foo/bar",
+        "f[^eiu][^eiu][^eiu][^eiu][^eiu]r",
+        opts.clone(),
+        false,
+    );
     assert_is_match("foo/bar", "foo[/]bar", opts.clone(), true);
-    assert_is_match("foo-bar", "f[^eiu][^eiu][^eiu][^eiu][^eiu]r", opts.clone(), true);
+    assert_is_match(
+        "foo-bar",
+        "f[^eiu][^eiu][^eiu][^eiu][^eiu]r",
+        opts.clone(),
+        true,
+    );
 }
 
 #[test]

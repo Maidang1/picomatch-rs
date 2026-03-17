@@ -29,3 +29,12 @@ Keep commit subjects short and imperative. Existing history uses plain subjects 
 ## Agent-Specific Notes
 
 Read `process.md` before starting work. After finishing, record what changed, what remains open, and any verification you ran so the next contributor can pick up without re-discovery.
+
+
+# important
+
+当你开始启动的时候，你需要去读取 process.md 去看之前的完成任务
+
+When you do compression, you need to keep a file (process.md) of work done and work not done, status done and progress done, so that other models can take over and know exactly what you did and didn't do.
+
+补充迁移缺失的那个测试 如果没有实现或者测试用例失败了，不可以不迁移，可以添加注释标注。进行测试用例的时候，需要将测试用例测试的状态写入到 /crates/picomatch-rs/tests/status 文件夹下面,并且标注最后修复时间以及原JS文件位置和输出的Rust文件位置，并且在 process.md 添加简短的测试状态描述。

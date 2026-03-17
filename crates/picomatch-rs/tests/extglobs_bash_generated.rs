@@ -43,25 +43,45 @@ mod tests {
     #[test]
     fn test_5() {
         let opts = bash_options(true);
-        assert_is_match("-adobe-courier-bold-o-normal--12-120-75-75-/-70-iso8859-1", "-*-*-*-*-*-*-12-*-*-*-m-*-*-*", opts.clone(), false);
+        assert_is_match(
+            "-adobe-courier-bold-o-normal--12-120-75-75-/-70-iso8859-1",
+            "-*-*-*-*-*-*-12-*-*-*-m-*-*-*",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
     fn test_6() {
         let opts = bash_options(true);
-        assert_is_match("-adobe-courier-bold-o-normal--12-120-75-75-m-70-iso8859-1", "-*-*-*-*-*-*-12-*-*-*-m-*-*-*", opts.clone(), true);
+        assert_is_match(
+            "-adobe-courier-bold-o-normal--12-120-75-75-m-70-iso8859-1",
+            "-*-*-*-*-*-*-12-*-*-*-m-*-*-*",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_7() {
         let opts = bash_options(true);
-        assert_is_match("-adobe-courier-bold-o-normal--12-120-75-75-X-70-iso8859-1", "-*-*-*-*-*-*-12-*-*-*-m-*-*-*", opts.clone(), false);
+        assert_is_match(
+            "-adobe-courier-bold-o-normal--12-120-75-75-X-70-iso8859-1",
+            "-*-*-*-*-*-*-12-*-*-*-m-*-*-*",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
     fn test_8() {
         let opts = bash_options(true);
-        assert_is_match("/dev/udp/129.22.8.102/45", "/dev\\/@(tcp|udp)\\/*\\/*", opts.clone(), true);
+        assert_is_match(
+            "/dev/udp/129.22.8.102/45",
+            "/dev\\/@(tcp|udp)\\/*\\/*",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
@@ -1417,13 +1437,23 @@ mod tests {
     #[test]
     fn test_234() {
         let opts = bash_options(true);
-        assert_is_match("abcd/abcdefg/abcdefghijk/abcdefghijklmnop.txt", "**/*a*b*g*n*t", opts.clone(), true);
+        assert_is_match(
+            "abcd/abcdefg/abcdefghijk/abcdefghijklmnop.txt",
+            "**/*a*b*g*n*t",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_235() {
         let opts = bash_options(true);
-        assert_is_match("abcd/abcdefg/abcdefghijk/abcdefghijklmnop.txtz", "**/*a*b*g*n*t", opts.clone(), false);
+        assert_is_match(
+            "abcd/abcdefg/abcdefghijk/abcdefghijklmnop.txtz",
+            "**/*a*b*g*n*t",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
@@ -2857,7 +2887,12 @@ mod tests {
     #[test]
     fn test_474() {
         let opts = bash_options(true);
-        assert_is_match("egzefffgzbcdij", "*(b+(c)d|e*(f)g?|?(h)i@(j|k))", opts.clone(), true);
+        assert_is_match(
+            "egzefffgzbcdij",
+            "*(b+(c)d|e*(f)g?|?(h)i@(j|k))",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
@@ -2977,7 +3012,12 @@ mod tests {
     #[test]
     fn test_494() {
         let opts = bash_options(true);
-        assert_is_match("fffooofoooooffoofffooofff", "*(*(f)*(o))", opts.clone(), true);
+        assert_is_match(
+            "fffooofoooooffoofffooofff",
+            "*(*(f)*(o))",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
@@ -3295,7 +3335,12 @@ mod tests {
     #[test]
     fn test_547() {
         let opts = bash_options(true);
-        assert_is_match("foo/bar/baz.jsx", "foo/bar/**/*.+(js|jsx)", opts.clone(), true);
+        assert_is_match(
+            "foo/bar/baz.jsx",
+            "foo/bar/**/*.+(js|jsx)",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
@@ -3565,13 +3610,23 @@ mod tests {
     #[test]
     fn test_592() {
         let opts = bash_options(true);
-        assert_is_match("Makefile", "!(*.c|*.h|Makefile.in|config*|README)", opts.clone(), true);
+        assert_is_match(
+            "Makefile",
+            "!(*.c|*.h|Makefile.in|config*|README)",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_593() {
         let opts = bash_options(true);
-        assert_is_match("Makefile.in", "!(*.c|*.h|Makefile.in|config*|README)", opts.clone(), false);
+        assert_is_match(
+            "Makefile.in",
+            "!(*.c|*.h|Makefile.in|config*|README)",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
@@ -3643,25 +3698,45 @@ mod tests {
     #[test]
     fn test_605() {
         let opts = bash_options(true);
-        assert_is_match("ofoooxoofxoofoooxoofxo", "*(*(of*(o)x)o)", opts.clone(), true);
+        assert_is_match(
+            "ofoooxoofxoofoooxoofxo",
+            "*(*(of*(o)x)o)",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_606() {
         let opts = bash_options(true);
-        assert_is_match("ofoooxoofxoofoooxoofxofo", "*(*(of*(o)x)o)", opts.clone(), false);
+        assert_is_match(
+            "ofoooxoofxoofoooxoofxofo",
+            "*(*(of*(o)x)o)",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
     fn test_607() {
         let opts = bash_options(true);
-        assert_is_match("ofoooxoofxoofoooxoofxoo", "*(*(of*(o)x)o)", opts.clone(), true);
+        assert_is_match(
+            "ofoooxoofxoofoooxoofxoo",
+            "*(*(of*(o)x)o)",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_608() {
         let opts = bash_options(true);
-        assert_is_match("ofoooxoofxoofoooxoofxooofxofxo", "*(*(of*(o)x)o)", opts.clone(), true);
+        assert_is_match(
+            "ofoooxoofxoofoooxoofxooofxofxo",
+            "*(*(of*(o)x)o)",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
@@ -3787,13 +3862,23 @@ mod tests {
     #[test]
     fn test_629() {
         let opts = bash_options(true);
-        assert_is_match("parse.y", "!(*.c|*.h|Makefile.in|config*|README)", opts.clone(), true);
+        assert_is_match(
+            "parse.y",
+            "!(*.c|*.h|Makefile.in|config*|README)",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_630() {
         let opts = bash_options(true);
-        assert_is_match("shell.c", "!(*.c|*.h|Makefile.in|config*|README)", opts.clone(), false);
+        assert_is_match(
+            "shell.c",
+            "!(*.c|*.h|Makefile.in|config*|README)",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
@@ -3847,13 +3932,23 @@ mod tests {
     #[test]
     fn test_639() {
         let opts = bash_options(false);
-        assert_is_match("XXX/adobe/courier/bold/o/normal//12/120/75/75/m/70/iso8859/1", "XXX/*/*/*/*/*/*/12/*/*/*/m/*/*/*", opts.clone(), true);
+        assert_is_match(
+            "XXX/adobe/courier/bold/o/normal//12/120/75/75/m/70/iso8859/1",
+            "XXX/*/*/*/*/*/*/12/*/*/*/m/*/*/*",
+            opts.clone(),
+            true,
+        );
     }
 
     #[test]
     fn test_640() {
         let opts = bash_options(true);
-        assert_is_match("XXX/adobe/courier/bold/o/normal//12/120/75/75/X/70/iso8859/1", "XXX/*/*/*/*/*/*/12/*/*/*/m/*/*/*", opts.clone(), false);
+        assert_is_match(
+            "XXX/adobe/courier/bold/o/normal//12/120/75/75/X/70/iso8859/1",
+            "XXX/*/*/*/*/*/*/12/*/*/*/m/*/*/*",
+            opts.clone(),
+            false,
+        );
     }
 
     #[test]
@@ -3909,5 +4004,4 @@ mod tests {
         let opts = bash_options(true);
         assert_is_match("zz", "(a+|b)*", opts.clone(), false);
     }
-
 }

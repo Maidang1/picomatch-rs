@@ -1,6 +1,4 @@
-use napi::{
-    Env, Error, JsFunction, JsObject, JsUnknown, Result, Status, ValueType,
-};
+use napi::{Env, Error, JsFunction, JsObject, JsUnknown, Result, Status, ValueType};
 use napi_derive::napi;
 use picomatch_rs::{
     make_re as make_re_impl, parse as parse_impl, CompileOptions, ParseState, ParseToken,
@@ -77,11 +75,17 @@ fn descriptor_from_state(
 
 fn parse_patterns(value: Value) -> Result<Vec<String>> {
     match value {
-        Value::String(pattern) => Ok(vec![pattern]),
+        Value::String(pattern) => {
+            ensure_non_empty_pattern(&pattern)?;
+            Ok(vec![pattern])
+        }
         Value::Array(values) => values
             .into_iter()
             .map(|value| match value {
-                Value::String(pattern) => Ok(pattern),
+                Value::String(pattern) => {
+                    ensure_non_empty_pattern(&pattern)?;
+                    Ok(pattern)
+                }
                 _ => Err(Error::new(
                     Status::InvalidArg,
                     "Expected pattern to be a string or an array of strings".to_string(),
@@ -90,7 +94,7 @@ fn parse_patterns(value: Value) -> Result<Vec<String>> {
             .collect(),
         _ => Err(Error::new(
             Status::InvalidArg,
-            "Expected pattern to be a string or an array of strings".to_string(),
+            "Expected pattern to be a non-empty string".to_string(),
         )),
     }
 }
@@ -230,16 +234,7 @@ fn execute_pattern(
 
     if input.is_empty() {
         return create_result_object(
-            env,
-            glob,
-            descriptor,
-            &regex,
-            input,
-            "",
-            posix,
-            false,
-            None,
-            false,
+            env, glob, descriptor, &regex, input, "", posix, false, None, false,
         );
     }
 
@@ -315,6 +310,13 @@ fn parse_state_to_js(env: &Env, state: &ParseState) -> Result<JsObject> {
         object.set_named_property("tokens", js_tokens)?;
     }
 
+    Ok(object)
+}
+
+fn matcher_state_to_js(env: &Env, pattern: &str, state: &ParseState) -> Result<JsObject> {
+    let mut object = parse_state_to_js(env, state)?;
+    let scan_state = picomatch_rs::scan(pattern, &ScanOptions::default());
+    object.set_named_property("negatedExtglob", scan_state.negated_extglob)?;
     Ok(object)
 }
 
@@ -441,19 +443,19 @@ impl NativeMatcher {
         }
 
         if should_return_object {
-            if let Some((pattern, descriptor)) = self.patterns.iter().zip(self.descriptors.iter()).next() {
-                return Ok(
-                    execute_pattern(
-                        &env,
-                        &input,
-                        pattern,
-                        descriptor,
-                        &self.options,
-                        self.capture,
-                        self.posix,
-                    )?
-                    .into_unknown(),
-                );
+            if let Some((pattern, descriptor)) =
+                self.patterns.iter().zip(self.descriptors.iter()).next()
+            {
+                return Ok(execute_pattern(
+                    &env,
+                    &input,
+                    pattern,
+                    descriptor,
+                    &self.options,
+                    self.capture,
+                    self.posix,
+                )?
+                .into_unknown());
             }
         }
 
@@ -464,18 +466,26 @@ impl NativeMatcher {
     pub fn state(&self, env: Env) -> Result<JsUnknown> {
         if self.descriptors.len() == 1 {
             if let Some(state) = &self.descriptors[0].state {
-                return env.to_js_value(state);
+                return Ok(matcher_state_to_js(&env, &self.patterns[0], state)?.into_unknown());
             }
 
             return Ok(env.get_null()?.into_unknown());
         }
 
-        let states = self
-            .descriptors
+        let mut states = env.create_array_with_length(self.descriptors.len())?;
+        for (index, (pattern, descriptor)) in self
+            .patterns
             .iter()
-            .map(|descriptor| descriptor.state.clone())
-            .collect::<Vec<_>>();
-        env.to_js_value(&states)
+            .zip(self.descriptors.iter())
+            .enumerate()
+        {
+            let value = match &descriptor.state {
+                Some(state) => matcher_state_to_js(&env, pattern, state)?.into_unknown(),
+                None => env.get_null()?.into_unknown(),
+            };
+            states.set_element(index as u32, value)?;
+        }
+        Ok(states.into_unknown())
     }
 
     #[napi(getter)]
@@ -697,8 +707,15 @@ pub fn is_match(env: Env, input: String, patterns: Value, options: Option<Value>
                 format!("Native makeRe does not support pattern: {pattern}"),
             )
         })?;
-        let result =
-            execute_pattern(&env, &input, &pattern, &descriptor, &options, capture, posix)?;
+        let result = execute_pattern(
+            &env,
+            &input,
+            &pattern,
+            &descriptor,
+            &options,
+            capture,
+            posix,
+        )?;
         if result.get_named_property::<bool>("isMatch")? {
             return Ok(true);
         }

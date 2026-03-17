@@ -14,6 +14,9 @@
   "license": "MIT",
   "files": [
     "index.js",
+    "native.js",
+    "posix.js",
+    "lib/",
     "index.d.ts",
     "napi/index.d.ts",
     "*.node"
@@ -36,7 +39,7 @@
     "build:debug": "napi build napi --platform --cargo-cwd napi --profile dev && node tools/sync-native-artifact.js",
     "mocha": "mocha --reporter dot",
     "test:rust": "cargo test --workspace",
-    "test:node": "npm run build && npm run mocha -- test/smoke.js",
+    "test:node": "npm run build && npm run mocha -- \"test/**/*.js\"",
     "test": "npm run test:rust && npm run test:node"
   },
   "devDependencies": {
