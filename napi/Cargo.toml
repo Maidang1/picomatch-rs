@@ -1,0 +1,20 @@
+[package]
+name = "picomatch-rs-napi"
+version = "0.1.0"
+edition = "2021"
+description = "Node-API bindings for picomatch-rs built with napi-rs."
+license = "MIT"
+repository = "https://github.com/Maidang1/picomatch-rs"
+homepage = "https://github.com/Maidang1/picomatch-rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", default-features = false, features = ["napi8", "serde-json"] }
+napi-derive = "2"
+picomatch-rs = { path = "../crates/picomatch-rs" }
+serde_json = "1"
+
+[build-dependencies]
+napi-build = "2"

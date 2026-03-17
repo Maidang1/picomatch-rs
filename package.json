@@ -1,0 +1,55 @@
+{
+  "name": "picomatch-rs",
+  "description": "Rust-first glob matching library with a napi-rs powered Node-API package.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/Maidang1/picomatch-rs",
+  "author": "Felix W. Liu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Maidang1/picomatch-rs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Maidang1/picomatch-rs/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "napi/index.d.ts",
+    "*.node"
+  ],
+  "sideEffects": false,
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "napi build napi --platform --cargo-cwd napi && node tools/sync-native-artifact.js",
+    "build:debug": "napi build napi --platform --cargo-cwd napi --profile dev && node tools/sync-native-artifact.js",
+    "mocha": "mocha --reporter dot",
+    "test:rust": "cargo test --workspace",
+    "test:node": "npm run build && npm run mocha -- test/smoke.js",
+    "test": "npm run test:rust && npm run test:node"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.4",
+    "mocha": "^10.4.0"
+  },
+  "keywords": [
+    "glob",
+    "rust",
+    "napi-rs",
+    "node-api"
+  ],
+  "napi": {
+    "name": "picomatch-rs"
+  }
+}

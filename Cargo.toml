@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "crates/picomatch-rs",
+  "napi"
+]
+resolver = "2"
