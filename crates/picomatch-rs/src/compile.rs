@@ -33,6 +33,10 @@ pub struct CompileOptions {
     pub unescape: bool,
     pub windows: bool,
     pub regex: bool,
+    #[serde(default)]
+    pub keep_quotes: bool,
+    #[serde(default)]
+    pub max_length: Option<usize>,
 }
 
 impl Default for CompileOptions {
@@ -57,6 +61,8 @@ impl Default for CompileOptions {
             unescape: false,
             windows: false,
             regex: false,
+            keep_quotes: false,
+            max_length: None,
         }
     }
 }
@@ -443,13 +449,13 @@ fn posix_class_source(name: &str) -> Option<&'static str> {
         "alnum" => Some("a-zA-Z0-9"),
         "alpha" => Some("a-zA-Z"),
         "ascii" => Some(r"\x00-\x7F"),
-        "blank" => Some(" \t"),
+        "blank" => Some(r" \t"),
         "cntrl" => Some(r"\x00-\x1F\x7F"),
         "digit" => Some("0-9"),
         "graph" => Some(r"\x21-\x7E"),
         "lower" => Some("a-z"),
         "print" => Some(r"\x20-\x7E "),
-        "punct" => Some(r##"\-!"#$%&'()\*+,./:;<=>?@\[\\\]^_`{|}~"##),
+        "punct" => Some(r##"\-!"#$%&'()\*+,./:;<=>?@\[\]^_`{|}~"##),
         "space" => Some(r" \t\r\n\v\f"),
         "upper" => Some("A-Z"),
         "word" => Some("A-Za-z0-9_"),
@@ -887,7 +893,13 @@ fn compile_body_with_context(
             }
 
             if next_index < chars.len() {
-                output.push_str(&escape_literal(&literal));
+                if options.keep_quotes {
+                    output.push_str(r#"\""#);
+                    output.push_str(&escape_literal(&literal));
+                    output.push_str(r#"\""#);
+                } else {
+                    output.push_str(&escape_literal(&literal));
+                }
                 segment_start = false;
                 last_was_wildcard = false;
                 last_token_kind = TokenKind::Literal;
@@ -1301,11 +1313,14 @@ fn compile_body_with_context(
                             ));
                         }
                     } else {
+                        let slash = slash_literal(options);
+                        let leading = if index == 0 {
+                            format!("(?:{slash}+)?")
+                        } else {
+                            String::new()
+                        };
                         output.push_str(&format!(
-                            "(?:{}(?:{}{})*)?",
-                            globstar,
-                            slash_literal(options),
-                            globstar
+                            "{leading}(?:{globstar}(?:{slash}+{globstar})*)?",
                         ));
                     }
                     segment_start = false;
@@ -1363,7 +1378,7 @@ fn compile_body_with_context(
     }
 
     if last_was_wildcard && !options.strict_slashes && !pattern.is_empty() {
-        output.push_str(&format!("{}?", slash_literal(options)));
+        output.push_str(&format!("(?:{}+)?", slash_literal(options)));
     }
 
     if optional_trailing_slash {

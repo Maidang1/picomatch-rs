@@ -41,6 +41,75 @@ fn bool_option(value: &Option<Value>, key: &str) -> bool {
     }
 }
 
+const DEFAULT_MAX_LENGTH: usize = 65536;
+
+fn check_max_length(input: &str, max: Option<usize>) -> Result<()> {
+    let limit = max.unwrap_or(DEFAULT_MAX_LENGTH);
+    let len = input.len();
+    if len > limit {
+        Err(Error::new(
+            Status::GenericFailure,
+            format!("Input length: {len}, exceeds maximum allowed length: {limit}"),
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn check_strict_brackets(input: &str) -> Result<()> {
+    let chars: Vec<char> = input.chars().collect();
+    let mut paren_depth: i32 = 0;
+    let mut bracket_depth: i32 = 0;
+    let mut i = 0;
+
+    while i < chars.len() {
+        let ch = chars[i];
+        if ch == '\\' {
+            i += 2;
+            continue;
+        }
+        match ch {
+            '(' => paren_depth += 1,
+            ')' => {
+                paren_depth -= 1;
+                if paren_depth < 0 {
+                    return Err(Error::new(
+                        Status::GenericFailure,
+                        r#"Missing opening: "(""#.to_string(),
+                    ));
+                }
+            }
+            '[' => bracket_depth += 1,
+            ']' => {
+                bracket_depth -= 1;
+                if bracket_depth < 0 {
+                    return Err(Error::new(
+                        Status::GenericFailure,
+                        r#"Missing opening: "[""#.to_string(),
+                    ));
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+
+    if paren_depth > 0 {
+        return Err(Error::new(
+            Status::GenericFailure,
+            r#"Missing closing: ")""#.to_string(),
+        ));
+    }
+    if bracket_depth > 0 {
+        return Err(Error::new(
+            Status::GenericFailure,
+            r#"Missing closing: "]""#.to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
 fn flags_for_options(options: &CompileOptions) -> String {
     if !options.flags.is_empty() {
         options.flags.clone()
@@ -585,6 +654,12 @@ pub fn make_re(
     let options = compile_options_from_value(options)?;
     ensure_non_empty_pattern(&input)?;
 
+    check_max_length(&input, options.max_length)?;
+
+    if options.strict_brackets {
+        check_strict_brackets(&input)?;
+    }
+
     let Some(descriptor) = make_re_impl(&input, &options, return_state.unwrap_or(false)) else {
         return Ok(env.get_null()?.into_unknown());
     };
@@ -701,6 +776,7 @@ pub fn is_match(env: Env, input: String, patterns: Value, options: Option<Value>
 
     for pattern in patterns {
         ensure_non_empty_pattern(&pattern)?;
+        check_max_length(&pattern, options.max_length)?;
         let descriptor = make_re_impl(&pattern, &options, true).ok_or_else(|| {
             Error::new(
                 Status::GenericFailure,
@@ -733,6 +809,7 @@ pub fn compile_matcher(patterns: Value, options: Option<Value>) -> Result<Native
 
     for pattern in &patterns {
         ensure_non_empty_pattern(pattern)?;
+        check_max_length(pattern, options.max_length)?;
         let descriptor = make_re_impl(pattern, &options, true).ok_or_else(|| {
             Error::new(
                 Status::GenericFailure,

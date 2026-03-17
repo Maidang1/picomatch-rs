@@ -34,7 +34,7 @@ fn posix_bracket_type_conversion() {
     assert_eq!(convert("[[:xdigit:]]", &opts), "(?=.)[A-Fa-f0-9]");
 
     // Use r## for very complex punct set
-    let expected_all = "(?=.)[a-zA-Z0-9a-zA-Z \t\\x00-\\x1F\\x7F0-9\\x21-\\x7Ea-z\\x20-\\x7E \\-!\"#$%&'()\\*+,./:;<=>?@\\[\\\\\\]^_`{|}~ \\t\\r\\n\\v\\fA-ZA-Fa-f0-9]";
+    let expected_all = "(?=.)[a-zA-Z0-9a-zA-Z \\t\\x00-\\x1F\\x7F0-9\\x21-\\x7Ea-z\\x20-\\x7E \\-!\"#$%&'()\\*+,./:;<=>?@\\[\\]^_`{|}~ \\t\\r\\n\\v\\fA-ZA-Fa-f0-9]";
     assert_eq!(
         convert("[[:alnum:][:alpha:][:blank:][:cntrl:][:digit:][:graph:][:lower:][:print:][:punct:][:space:][:upper:][:xdigit:]]", &opts),
         expected_all
@@ -45,7 +45,7 @@ fn posix_bracket_type_conversion() {
             "[^[:alnum:][:alpha:][:blank:][:cntrl:][:digit:][:lower:][:space:][:upper:][:xdigit:]]",
             &opts
         ),
-        "(?=.)[^a-zA-Z0-9a-zA-Z \t\\x00-\\x1F\\x7F0-9a-z \\t\\r\\n\\v\\fA-ZA-Fa-f0-9]"
+        "(?=.)[^a-zA-Z0-9a-zA-Z \\t\\x00-\\x1F\\x7F0-9a-z \\t\\r\\n\\v\\fA-ZA-Fa-f0-9]"
     );
     assert_eq!(convert("[a-c[:digit:]x-z]", &opts), "(?=.)[a-c0-9x-z]");
     assert_eq!(
@@ -172,7 +172,7 @@ fn should_not_create_an_invalid_posix_character_class() {
     assert_eq!(res1, r"(?:\[:al:\]|[:al:])", "convert('[:al:]') failed");
 
     let res2 = convert("[abc[:punct:][0-9]", &opts);
-    let expected = r##"(?=.)[abc\-!"#$%&'()\*+,./:;<=>?@\[\\\]^_`{|}~\[0-9]"##;
+    let expected = r##"(?=.)[abc\-!"#$%&'()\*+,./:;<=>?@\[\]^_`{|}~\[0-9]"##;
     assert_eq!(res2, expected, "convert('[abc[:punct:][0-9]') failed");
 }
 
