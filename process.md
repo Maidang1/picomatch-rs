@@ -110,3 +110,27 @@
 - The current JS wrapper layer can mask which failures belong to native behavior versus wrapper behavior, so parity work should now move back into `napi/src/lib.rs` and the Rust core only.
 - Some upstream parity tests currently import historical JS-only helper paths such as `../lib/utils`; those imports will now fail unless equivalent native-backed surfaces are intentionally reintroduced as thin forwards.
 - Some upstream JS tests rely on old package entrypoints such as `require('../lib/scan')` and `require('../posix')`; if these entrypoints are retained, they should stay as thin forwarding shims only.
+
+## Session: Fix JS test case errors (keepQuotes, maxLength, strictBrackets, globstar, POSIX)
+
+### Done
+- Added `keep_quotes: bool` to `CompileOptions` (serde: `keepQuotes`); when true, double-quoted literals keep their quotes in the regex output
+- Added `max_length: Option<usize>` to `CompileOptions` (serde: `maxLength`); NAPI layer enforces 65536-byte default in `makeRe`, `isMatch`, `compileMatcher`
+- Added `check_strict_brackets` in `napi/src/lib.rs`; throws descriptive errors for unbalanced parens/brackets when `strict_brackets: true`
+- Fixed globstar standalone terminal `**` to handle consecutive slashes (`slash+` internally, optional `(?:slash+)?` leading prefix at index 0)
+- Changed trailing wildcard slash from `slash?` to `(?:slash+)?`
+- Fixed POSIX `blank` class: `r" \t"` (regex escape) instead of literal tab
+- Fixed POSIX `punct` class: `\[\]` instead of `[\]` to avoid nested-bracket parse errors in fancy_regex
+- Updated `posix_classes.rs` test expectations for blank (`\\t`) and punct (`\\[\\]`)
+- Bounds-checked backslash skip in `check_strict_brackets`
+
+### Verification
+- `CARGO_TARGET_DIR=/tmp/picomatch-target cargo test --workspace` → all passed
+- `npm run mocha -- "test/special-characters.js" "test/malicious.js" "test/extglobs.js" "test/negation.js"` → 96 passing, 2 failing (both pre-existing)
+- `npm run mocha -- "test/**/*.js"` → 1960 passing, 6 failing (was 1937/29 before)
+- CodeQL: 0 alerts
+
+### Status files to update
+- `crates/picomatch-rs/tests/status/posix_classes.md` — punct/blank fix applied 2025
+- `crates/picomatch-rs/tests/status/malicious.md` — maxLength now enforced
+- `crates/picomatch-rs/tests/status/special_characters.md` — globstar consecutive slash partially improved
