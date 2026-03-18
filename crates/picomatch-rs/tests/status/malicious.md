@@ -1,16 +1,28 @@
 # malicious.rs 测试状态
 
 ## 测试结果
-- ✅ 基本通过（部分测试由于语言机制不同未迁移/忽略）
+- ✅ 全部通过
 
 ## 统计信息
 - 测试用例数: 2
-- 通过: 1
-- 忽略: 1 (`test_long_escape_sequences`)
+- 通过: 2
+- 忽略: 0
 - 失败: 0
 
 ## 迁移情况与差异说明
 从 `test/malicious.js` 迁移了防备正则拒绝服务的测试，考虑到语言运行时的机制差异，做出以下调整：
-- ** maxLength 限制测试被丢弃**: JS 在预处理阶段使用了抛错机制 (`throw new SyntaxError`) 防御超长输入（>65536 字符），而 Rust 端受语言限制及自身正则执行模型，尚未直接抛出错误。故 `maxLength` 参数相关的报错测试未进行直译。
-- ** backslash collapsing**: 测试 `should support long escape sequences` 中由于 JS 版 `picomatch` 的 `scan.js` 会把 65500 级连续反斜杠压缩，而在 Rust 中由于逐个解析的特性会导致堆栈溢出/执行不符预期。该测试已被标记为 `#[ignore]` 备忘。
+- ** maxLength 限制**: N-API 层已经按 JS 语义默认限制到 65536 字节，并支持 `maxLength` 自定义上限。
+- ** long backslash sequences**: `test_long_escape_sequences` 已恢复为正常测试，不再 `#[ignore]`。
+- ** invalid patterns fail closed**: Rust 核心仍会把部分不支持的畸形模式视为 `UnsupportedPattern`；Node N-API parity 路径则在 `isMatch` 上返回 `false`，与 JS 用例保持一致。
 - 迁移了原生的 `constructor`、`__proto__` 关键词属性作为普通字符串输入匹配校验能够正确通过。
+
+## 最近修复
+- 在 `crates/picomatch-rs/src/compile.rs` 中加入了长反斜杠序列压缩逻辑，避免超长 `\\\\...\\\\A` 模式在编译期展开失控
+- 在 `napi/src/lib.rs` 中将 unsupported pattern 的 `isMatch` 行为调整为 fail-closed `false`
+
+## 验证命令
+
+```bash
+cargo test -p picomatch-rs --test malicious
+npm run mocha -- test/malicious.js
+```

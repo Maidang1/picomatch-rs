@@ -2,14 +2,14 @@
 
 **对应 JS 文件**: `test/options.js`
 
-**状态**: ✅ 已完成 (部分功能在 Rust 中有实现差异)
+**状态**: ✅ 已完成
 
 **测试命令**: `cargo test -p picomatch-rs --test options`
 
 **结果**:
 - 测试函数数: 9 个
 - 测试用例数: 约 80 个
-- 通过: 全部通过 (1 个 assertion 被注释掉，见下文)
+- 通过: 全部通过
 - 失败: 0 个
 
 ## 迁移说明
@@ -19,9 +19,10 @@
 ### 实现差异与注释
 
 1. **`options.unescape`**:
-   - 在 JS 中，`unescape: true` 配合 `windows: true` 时，模式 `\\a\\b\\c` 会被解义为 `abc`。
-   - 在当前 Rust 实现中，`windows: true` 优先级较高，会将反斜杠视为路径分隔符。因此 `\\a\\b\\c` 被编译为匹配 `/a/b/c` 的正则，不匹配 `abc`。
-   - 已在 `options_unescape` 测试中注释掉相关的 `abc` 匹配断言，并添加了 TODO。
+   - `windows: true` 且 `unescape: true` 时，模式 `\\a\\b\\c` 现在同时兼容：
+     - `abc`
+     - `/a/b/c`
+   - Rust `options.rs` 内部辅助函数已改成与 JS `test/support/match.js` 一样做去重，避免 `\\a\\b\\c` fixture 归一化后重复返回 `/a/b/c`。
 
 2. **`options.format`**:
    - JS 中的 `format` 回调选项在 Rust 中通过手动处理输入字符串（如 `strip_prefix("./")` 和 `replace('\\', "/")`）来模拟，以达到等效的测试效果。

@@ -2,7 +2,7 @@ use napi::{Env, Error, JsFunction, JsObject, JsUnknown, Result, Status, ValueTyp
 use napi_derive::napi;
 use picomatch_rs::{
     make_re as make_re_impl, parse as parse_impl, CompileOptions, ParseState, ParseToken,
-    RegexDescriptor, ScanOptions, ScanState, ScanToken,
+    RegexDescriptor, ScanOptions, ScanState, ScanToken, regex_output_for_engine,
 };
 use serde_json::Value;
 
@@ -42,6 +42,15 @@ fn bool_option(value: &Option<Value>, key: &str) -> bool {
 }
 
 const DEFAULT_MAX_LENGTH: usize = 65536;
+
+fn never_match_descriptor() -> RegexDescriptor {
+    RegexDescriptor {
+        source: "$^".to_string(),
+        flags: String::new(),
+        output: String::new(),
+        state: None,
+    }
+}
 
 fn check_max_length(input: &str, max: Option<usize>) -> Result<()> {
     let limit = max.unwrap_or(DEFAULT_MAX_LENGTH);
@@ -128,7 +137,7 @@ fn descriptor_from_state(
     let prepend = if options.contains { "" } else { "^" };
     let append = if options.contains { "" } else { "$" };
     let output = state.output.clone();
-    let mut source = format!("{prepend}(?:{output}){append}");
+    let mut source = format!("{prepend}(?:{}){append}", regex_output_for_engine(&output));
 
     if state.negated {
         source = format!("^(?!{source}).*$");
@@ -777,12 +786,9 @@ pub fn is_match(env: Env, input: String, patterns: Value, options: Option<Value>
     for pattern in patterns {
         ensure_non_empty_pattern(&pattern)?;
         check_max_length(&pattern, options.max_length)?;
-        let descriptor = make_re_impl(&pattern, &options, true).ok_or_else(|| {
-            Error::new(
-                Status::GenericFailure,
-                format!("Native makeRe does not support pattern: {pattern}"),
-            )
-        })?;
+        let Some(descriptor) = make_re_impl(&pattern, &options, true) else {
+            continue;
+        };
         let result = execute_pattern(
             &env,
             &input,
@@ -810,12 +816,7 @@ pub fn compile_matcher(patterns: Value, options: Option<Value>) -> Result<Native
     for pattern in &patterns {
         ensure_non_empty_pattern(pattern)?;
         check_max_length(pattern, options.max_length)?;
-        let descriptor = make_re_impl(pattern, &options, true).ok_or_else(|| {
-            Error::new(
-                Status::GenericFailure,
-                format!("Native makeRe does not support pattern: {pattern}"),
-            )
-        })?;
+        let descriptor = make_re_impl(pattern, &options, true).unwrap_or_else(never_match_descriptor);
         descriptors.push(descriptor);
     }
 

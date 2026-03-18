@@ -67,11 +67,22 @@
 
 - The root `test:node` script can still hit sandbox-dependent file-copy behavior in restricted environments because `napi-rs` writes an intermediate artifact under `napi/` before the root sync step.
 - Historical status files under `crates/picomatch-rs/tests/status/` are still retained.
-- The remaining `29` Node parity failures have not been fixed yet in `napi/src/lib.rs` / Rust core.
-- The full Node suite currently aborts before assertions in `test/regex-features.js` because `../lib/utils` no longer exists.
+- There are still low-signal Rust test warnings (`unused_imports`, `dead_code`) in a few migrated test files that have not been cleaned up.
 
 ## Latest Verification
 
+- `pnpm run test`
+  - Result: passed
+  - Rust: workspace tests passed, including `malicious.rs`, `options.rs`, and `posix_classes.rs`
+  - Node: `1966 passing`, `0 failing`
+- `pnpm run test`
+  - Result: failed in `crates/picomatch-rs/tests/posix_classes.rs` with `5` failing tests:
+    - `posix_bracket_type_conversion`
+    - `should_not_create_an_invalid_posix_character_class`
+    - `matches_positive`
+    - `bash_unit_tests_ported`
+    - `posix_2_bre_tests`
+  - Failure shape: POSIX `[:punct:]` expansion currently emits `[` without escaping it for the generated regex character class, which causes expectation drift and `fancy_regex` parse failures (`Invalid character class`)
 - `CARGO_TARGET_DIR=/tmp/picomatch-target cargo test --workspace`
   - Result: passed
 - `CARGO_TARGET_DIR=/tmp/picomatch-target npm run build`
@@ -108,7 +119,6 @@
 - Any freshly built root `.node` artifact is platform-specific and should not be treated as a cross-platform release artifact.
 - Some npm build behavior still depends on how `@napi-rs/cli` copies artifacts under restricted sandboxes.
 - The current JS wrapper layer can mask which failures belong to native behavior versus wrapper behavior, so parity work should now move back into `napi/src/lib.rs` and the Rust core only.
-- Some upstream parity tests currently import historical JS-only helper paths such as `../lib/utils`; those imports will now fail unless equivalent native-backed surfaces are intentionally reintroduced as thin forwards.
 - Some upstream JS tests rely on old package entrypoints such as `require('../lib/scan')` and `require('../posix')`; if these entrypoints are retained, they should stay as thin forwarding shims only.
 
 ## Session: Fix JS test case errors (keepQuotes, maxLength, strictBrackets, globstar, POSIX)
@@ -130,7 +140,31 @@
 - `npm run mocha -- "test/**/*.js"` → 1960 passing, 6 failing (was 1937/29 before)
 - CodeQL: 0 alerts
 
+### Current Test Status
+- `pnpm run test` now passes end-to-end
+- POSIX `[:punct:]` parse output now stays JS-compatible while regex compilation sanitizes the fragment for `fancy_regex`
+- `windows + unescape` now matches both separator-preserving and separator-stripped forms for patterns like `\\a\\b\\c`
+- Long backslash sequences now collapse safely enough to satisfy `malicious.js`
+- Invalid unsupported patterns now fail closed in N-API `isMatch` / `compileMatcher` instead of surfacing as hard errors in the Node parity path
+
 ### Status files to update
-- `crates/picomatch-rs/tests/status/posix_classes.md` — punct/blank fix applied 2025
-- `crates/picomatch-rs/tests/status/malicious.md` — maxLength now enforced
+- `crates/picomatch-rs/tests/status/posix_classes.md` — now passing again; parse output vs engine-source sanitization documented
+- `crates/picomatch-rs/tests/status/malicious.md` — long backslash sequence test re-enabled; 2/2 passing
+- `crates/picomatch-rs/tests/status/options.md` — `options.unescape` parity updated for `windows: true`
 - `crates/picomatch-rs/tests/status/special_characters.md` — globstar consecutive slash partially improved
+
+## Session: Fix current pnpm test regressions
+
+### Done
+- Restored JS-compatible `[:punct:]` parse output while sanitizing regex source only for the Rust regex engine
+- Fixed N-API `compileRe` / `makeRe` source generation to use the sanitized engine output
+- Fixed `windows + unescape` handling for ordinary escaped literals such as `\\a\\b\\c`
+- Collapsed very long backslash runs during compilation to avoid pathological regex behavior
+- Re-enabled `crates/picomatch-rs/tests/malicious.rs::test_long_escape_sequences`
+- Adjusted N-API unsupported-pattern handling so Node parity `isMatch` returns `false` instead of throwing on fail-closed cases
+- Updated Rust `options.rs` helper to dedupe normalized matches like JS `test/support/match.js`
+
+### Verification
+- `cargo test -p picomatch-rs --test posix_classes --test options --test malicious -- --ignored` → passed
+- `npm run mocha -- test/malicious.js` → `4 passing`
+- `pnpm run test` → passed

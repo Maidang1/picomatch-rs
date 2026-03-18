@@ -10,12 +10,15 @@ fn match_list(fixtures: &[&str], pattern: &str, options: &CompileOptions) -> Vec
         // In picomatch-rs, normalization (like windows backslash swap) happens inside is_match
         match is_match(fixture, pattern, options) {
             Ok(true) => {
-                // Return the normalized string for consistency with JS support/match.js
-                // which often returns normalized paths or we expect them to be normalized.
-                if options.windows {
-                    matches.push(fixture.replace('\\', "/"));
+                // Mirror JS support/match.js: normalize windows paths and dedupe matches.
+                let value = if options.windows {
+                    fixture.replace('\\', "/")
                 } else {
-                    matches.push(fixture.to_string());
+                    fixture.to_string()
+                };
+
+                if !matches.contains(&value) {
+                    matches.push(value);
                 }
             }
             Ok(false) => {}
@@ -261,12 +264,9 @@ fn options_unescape() {
     let mut opts_un = opts.clone();
     opts_un.unescape = true;
     let results = match_list(fixtures, "\\a\\b\\c", &opts_un);
-    // TODO: Rust implementation of unescape with windows:true currently defaults to treating backslashes
-    // as path separators unless escaped. In JS, unescape:true would allow matching "abc" here.
-    // assert!(results.contains(&"abc".to_string()));
+    assert!(results.contains(&"abc".to_string()));
     assert!(results.contains(&"/a/b/c".to_string()));
-    // assert_eq!(results.len(), 2);
-    assert_eq!(results.len(), 1);
+    assert_eq!(results.len(), 2);
 
     let mut opts_no_un = opts.clone();
     opts_no_un.unescape = false;

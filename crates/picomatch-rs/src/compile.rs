@@ -444,6 +444,9 @@ fn compile_range(start: &str, end: &str) -> Option<String> {
     None
 }
 
+const POSIX_PUNCT_OUTPUT: &str = r##"\-!"#$%&'()\*+,./:;<=>?@[\]^_`{|}~"##;
+const POSIX_PUNCT_ENGINE: &str = r##"\-!"#$%&'()\*+,./:;<=>?@\[\]^_`{|}~"##;
+
 fn posix_class_source(name: &str) -> Option<&'static str> {
     match name {
         "alnum" => Some("a-zA-Z0-9"),
@@ -455,13 +458,17 @@ fn posix_class_source(name: &str) -> Option<&'static str> {
         "graph" => Some(r"\x21-\x7E"),
         "lower" => Some("a-z"),
         "print" => Some(r"\x20-\x7E "),
-        "punct" => Some(r##"\-!"#$%&'()\*+,./:;<=>?@[\]^_`{|}~"##),
+        "punct" => Some(POSIX_PUNCT_OUTPUT),
         "space" => Some(r" \t\r\n\v\f"),
         "upper" => Some("A-Z"),
         "word" => Some("A-Za-z0-9_"),
         "xdigit" => Some("A-Fa-f0-9"),
         _ => None,
     }
+}
+
+pub fn regex_output_for_engine(output: &str) -> String {
+    output.replace(POSIX_PUNCT_OUTPUT, POSIX_PUNCT_ENGINE)
 }
 
 fn has_regex_chars(input: &str) -> bool {
@@ -488,6 +495,20 @@ fn escape_literal(input: &str) -> String {
         }
     }
     output
+}
+
+fn push_literal_char(output: &mut String, ch: char) {
+    if ch == '\\' {
+        output.push_str("\\\\");
+        return;
+    }
+
+    let escaped = escape_regex_char(ch);
+    if escaped.is_empty() {
+        output.push(ch);
+    } else {
+        output.push_str(escaped);
+    }
 }
 
 fn sanitize_nested_negation(input: &str, strip_terminal_anchor: bool) -> String {
@@ -791,8 +812,55 @@ fn compile_body_with_context(
 
         if ch == '\\' {
             if let Some(next) = chars.get(index + 1).copied() {
+                let mut slash_run = 1usize;
+                while chars.get(index + slash_run) == Some(&'\\') {
+                    slash_run += 1;
+                }
+
+                if slash_run > 3 {
+                    let next_index = index + slash_run;
+                    if let Some(collapsed_next) = chars.get(next_index).copied() {
+                        if options.unescape {
+                            if options.windows && collapsed_next.is_ascii_alphanumeric() {
+                                output.push_str(&format!("(?:{}+)?", slash_literal(options)));
+                            }
+                            push_literal_char(&mut output, collapsed_next);
+                        } else {
+                            push_literal_char(&mut output, '\\');
+                            push_literal_char(&mut output, collapsed_next);
+                        }
+
+                        segment_start = false;
+                        last_was_wildcard = false;
+                        last_token_kind = TokenKind::Literal;
+                        index = next_index + 1;
+                        continue;
+                    }
+                }
+
                 if options.unescape && matches!(next, '{' | '}') {
                     output.push(next);
+                    segment_start = false;
+                    last_was_wildcard = false;
+                    last_token_kind = TokenKind::Literal;
+                    index += 2;
+                    continue;
+                }
+
+                if options.windows && next == '/' {
+                    output.push_str(slash_literal(options));
+                    segment_start = true;
+                    last_was_wildcard = false;
+                    last_token_kind = TokenKind::None;
+                    index += 2;
+                    continue;
+                }
+
+                if options.unescape && next.is_ascii_alphanumeric() {
+                    if options.windows {
+                        output.push_str(&format!("(?:{}+)?", slash_literal(options)));
+                    }
+                    push_literal_char(&mut output, next);
                     segment_start = false;
                     last_was_wildcard = false;
                     last_token_kind = TokenKind::Literal;
@@ -810,22 +878,8 @@ fn compile_body_with_context(
                     continue;
                 }
 
-                if options.windows && next == '/' {
-                    output.push_str(slash_literal(options));
-                    segment_start = true;
-                    last_was_wildcard = false;
-                    last_token_kind = TokenKind::None;
-                    index += 2;
-                    continue;
-                }
-
                 if options.windows && is_escaped_literal_in_windows(next) {
-                    let escaped = escape_regex_char(next);
-                    if escaped.is_empty() {
-                        output.push(next);
-                    } else {
-                        output.push_str(escaped);
-                    }
+                    push_literal_char(&mut output, next);
                     segment_start = false;
                     last_was_wildcard = false;
                     last_token_kind = TokenKind::Literal;
@@ -1708,7 +1762,10 @@ pub fn make_re(
     } else {
         ""
     };
-    let mut source = format!("{prepend}{guard}(?:{output}){append}");
+    let mut source = format!(
+        "{prepend}{guard}(?:{}){append}",
+        regex_output_for_engine(&output)
+    );
     if state.negated {
         source = format!("^(?!{source}).*$");
     }
