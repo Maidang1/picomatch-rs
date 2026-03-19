@@ -168,3 +168,20 @@
 - `cargo test -p picomatch-rs --test posix_classes --test options --test malicious -- --ignored` → passed
 - `npm run mocha -- test/malicious.js` → `4 passing`
 - `pnpm run test` → passed
+
+## Session: Fix Windows native artifact sync lookup
+
+### Done
+- Fixed `tools/sync-native-artifact.js` candidate names to support both `lib*` and non-`lib` dynamic library names:
+  - `libpicomatch_rs_napi.<ext>`
+  - `libpicomatch_napi.<ext>`
+  - `picomatch_rs_napi.<ext>`
+  - `picomatch_napi.<ext>`
+- Root cause addressed: Windows `cdylib` commonly emits `picomatch_rs_napi.dll` (no `lib` prefix), which the old script did not search.
+
+### Verification
+- `npm run build` → passed
+- `npm run mocha -- test/smoke.js` → `2 passing`, `0 failing`
+
+### Not Done
+- No live Windows runner verification in this local macOS session; Windows CI should be re-run to confirm end-to-end.

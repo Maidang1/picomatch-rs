@@ -19,7 +19,9 @@ const outputName = `picomatch-rs.${platform}-${arch}.node`;
 const outputPath = path.join(root, outputName);
 const candidateNames = [
   `libpicomatch_rs_napi.${extension}`,
-  `libpicomatch_napi.${extension}`
+  `libpicomatch_napi.${extension}`,
+  `picomatch_rs_napi.${extension}`,
+  `picomatch_napi.${extension}`
 ];
 const candidateDirs = [
   path.join(targetRoot, 'debug'),
