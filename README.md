@@ -7,17 +7,17 @@ The package root loads the compiled addon and re-exports the native API. The Rus
 ## Install
 
 ```sh
-npm install picomatch-rs
+npm install @maidang1/picomatch-rs
 ```
 
 ## Usage
 
 ### Node.js
 
-`require('picomatch-rs')` returns a callable matcher factory and also exposes the native helpers as named exports.
+`require('@maidang1/picomatch-rs')` returns a callable matcher factory and also exposes the native helpers as named exports.
 
 ```js
-const picomatch = require('picomatch-rs');
+const picomatch = require('@maidang1/picomatch-rs');
 
 const isJsFile = picomatch('**/*.js');
 
@@ -73,6 +73,22 @@ npm run test:rust   # run the Rust workspace tests
 npm run test:node   # build the addon and run the Node tests
 npm test            # run Rust and Node verification
 ```
+
+## Release
+
+Pushing a tag like `v0.1.0` triggers `.github/workflows/release.yml`.
+
+The release workflow:
+
+- verifies that the tag, `package.json`, `napi/Cargo.toml`, and `crates/picomatch-rs/Cargo.toml` all use the same version
+- builds and uploads platform-specific `.node` artifacts
+- publishes the scoped npm package `@maidang1/picomatch-rs` with all shipped binaries
+- publishes `crates/picomatch-rs` to crates.io
+
+Required GitHub repository secrets:
+
+- `NPM_TOKEN`
+- `CARGO_REGISTRY_TOKEN`
 
 ## Notes
 

@@ -6,6 +6,10 @@ description = "Rust glob matching core for the picomatch-rs workspace."
 license = "MIT"
 repository = "https://github.com/Maidang1/picomatch-rs"
 homepage = "https://github.com/Maidang1/picomatch-rs"
+documentation = "https://docs.rs/picomatch-rs"
+readme = "../../README.md"
+keywords = ["glob", "matcher", "wildcard", "picomatch", "pattern"]
+categories = ["filesystem", "text-processing"]
 
 [dependencies]
 fancy-regex = "0.14"

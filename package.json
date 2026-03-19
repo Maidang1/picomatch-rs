@@ -1,5 +1,5 @@
 {
-  "name": "picomatch-rs",
+  "name": "@maidang1/picomatch-rs",
   "description": "Native glob matching for Node.js, implemented in Rust and exposed through napi-rs.",
   "version": "0.1.0",
   "homepage": "https://github.com/Maidang1/picomatch-rs",

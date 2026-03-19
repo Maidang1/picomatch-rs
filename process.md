@@ -26,6 +26,11 @@
   - rewrote `README.md`
   - updated CI workflows and contributing guidance
   - added `tools/sync-native-artifact.js` to sync the built native library into a package-root `.node` artifact
+- Added an automated release workflow:
+  - created `.github/workflows/release.yml`
+  - validates version parity across the npm package, `napi/`, and `crates/picomatch-rs/`
+  - builds multi-platform `.node` artifacts before publishing the npm package
+  - publishes `crates/picomatch-rs` to crates.io
 - Replaced the old JS API test entry with a minimal root package smoke test:
   - `test/smoke.js`
 - Re-verified and fixed POSIX class coverage:
@@ -89,6 +94,8 @@
   - Result: passed
 - `npm run mocha -- test/smoke.js`
   - Result: `2 passing`, `0 failing`
+- Release workflow and README update
+  - Result: `git diff --check` passed
 - `cargo fmt --all`
   - Result: passed
 - `CARGO_TARGET_DIR=/tmp/picomatch-target npm run build`
@@ -113,6 +120,16 @@
   - Result: passed
 - `npm run mocha -- test/smoke.js`
   - Result: `2 passing`, `0 failing`
+- Rust crate publish metadata update
+  - Result: `cargo metadata --no-deps --manifest-path crates/picomatch-rs/Cargo.toml --format-version 1` passed
+  - Packaging: `cargo package --manifest-path crates/picomatch-rs/Cargo.toml --allow-dirty --list` included `README.md`
+- Scoped npm package metadata update
+  - Package name: `@maidang1/picomatch-rs`
+  - Rust crate and native binary names remain `picomatch-rs`
+- Scoped npm package verification
+  - `node -p "require('./package.json').name"` → `@maidang1/picomatch-rs`
+  - `npm run build` → passed
+  - `npm run mocha -- test/smoke.js` → `2 passing`, `0 failing`
 
 ## Current Risks
 
@@ -185,3 +202,26 @@
 
 ### Not Done
 - No live Windows runner verification in this local macOS session; Windows CI should be re-run to confirm end-to-end.
+
+## Session: Add automated npm and crates.io release workflow
+
+### Done
+- Added `.github/workflows/release.yml` for tag-driven publishing on `v*`
+- Added release validation to block mismatched versions between:
+  - root `package.json`
+  - `napi/Cargo.toml`
+  - `crates/picomatch-rs/Cargo.toml`
+- Added multi-runner native build jobs for:
+  - Linux x64 and arm64
+  - Windows x64 and arm64
+  - macOS x64 and arm64
+- Added npm publish job that downloads all built `.node` artifacts into one package before `npm publish`
+- Added crates.io publish job for `crates/picomatch-rs`
+- Added README release notes for trigger and required secrets
+
+### Verification
+- `git diff --check` → passed
+
+### Not Done
+- No end-to-end GitHub Actions run has been executed in this local session.
+- npm trusted publishing via OIDC is not configured; the workflow currently expects `NPM_TOKEN`.
