@@ -1,12 +1,8 @@
 # picomatch-rs
 
-Rust-first glob matching with a `napi-rs` powered Node-API package.
+Native glob matching for Node.js, implemented in Rust and exposed through `napi-rs`.
 
-This repository now keeps only the native implementation path:
-
-- `crates/picomatch-rs`: core Rust library and Rust integration tests
-- `napi/`: Node-API binding crate built with `napi-rs`
-- package root: minimal npm wrapper that loads the compiled addon
+The package root loads the compiled addon and re-exports the native API. The Rust core lives in `crates/picomatch-rs/`, and the Node binding lives in `napi/`.
 
 ## Install
 
@@ -14,34 +10,25 @@ This repository now keeps only the native implementation path:
 npm install picomatch-rs
 ```
 
-## Workspace Layout
+## Usage
 
-```text
-.
-├── Cargo.toml
-├── crates/
-│   └── picomatch-rs/
-├── napi/
-├── index.js
-├── index.d.ts
-└── test/
-    └── smoke.js
-```
+### Node.js
 
-## Node Usage
+`require('picomatch-rs')` returns a callable matcher factory and also exposes the native helpers as named exports.
 
 ```js
-const native = require('picomatch-rs');
+const picomatch = require('picomatch-rs');
 
-console.log(native.scan('src/**/*.rs'));
-console.log(native.isMatch('src/lib.rs', '**/*.rs'));
+const isJsFile = picomatch('**/*.js');
 
-const matcher = native.compileMatcher('**/*.rs');
-console.log(matcher.test('crates/picomatch-rs/src/lib.rs'));
+console.log(isJsFile('src/index.js'));
+console.log(picomatch.isMatch('src/lib.rs', '**/*.rs'));
+console.log(picomatch.scan('src/**/*.rs'));
 ```
 
-The package exports the native runtime surface from `napi/src/lib.rs`:
+Available exports:
 
+- default export: callable matcher factory
 - `scan`
 - `parse`
 - `compileRe`
@@ -53,7 +40,9 @@ The package exports the native runtime surface from `napi/src/lib.rs`:
 - `compileMatcher`
 - `NativeMatcher`
 
-## Rust Usage
+Legacy entrypoints such as `./lib/picomatch`, `./posix`, and `./lib/scan` are thin compatibility shims.
+
+### Rust
 
 ```rust
 use picomatch_rs::{is_match, CompileOptions};
@@ -62,37 +51,34 @@ let matched = is_match("src/lib.rs", "**/*.rs", CompileOptions::default()).unwra
 assert!(matched);
 ```
 
+## Repository Layout
+
+```text
+.
+├── crates/picomatch-rs/   # Rust matcher core and Rust tests
+├── napi/                  # Node-API binding crate
+├── index.js               # package entrypoint
+├── index.d.ts             # root TypeScript declarations
+├── native.js              # native addon loader
+├── lib/                   # compatibility shims
+└── test/                  # Node smoke and parity tests
+```
+
 ## Development
 
-Build the Node addon:
-
 ```sh
-npm run build
-```
-
-Run Rust tests:
-
-```sh
-npm run test:rust
-```
-
-Run the Node smoke test:
-
-```sh
-npm run test:node
-```
-
-Run the full verification path:
-
-```sh
-npm test
+npm run build       # build the release addon and sync the .node artifact
+npm run build:debug # build a debug addon for local debugging
+npm run test:rust   # run the Rust workspace tests
+npm run test:node   # build the addon and run the Node tests
+npm test            # run Rust and Node verification
 ```
 
 ## Notes
 
-- The root `index.js` is intentionally a thin native-loader shim.
-- Generated TypeScript declarations live under `napi/index.d.ts` and are re-exported from the package root.
-- Legacy JavaScript matcher sources, JS benchmark fixtures, and JS parity suites have been removed from the main development path.
+- `index.js` stays intentionally small: it loads the native addon and provides the callable package surface.
+- `index.d.ts` re-exports the generated declarations from `napi/index.d.ts`.
+- The repository no longer uses the old JavaScript implementation path for core matching behavior.
 
 ## License
 
