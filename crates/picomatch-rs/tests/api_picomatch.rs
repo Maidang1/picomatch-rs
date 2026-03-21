@@ -12,6 +12,8 @@ fn validates_empty_patterns() {
 
 #[test]
 fn validates_null_patterns() {
+    // JS: isMatch('foo', null) throws with /Expected pattern to be a non-empty string/
+    // Rust doesn't have null, but we test with empty string which is the equivalent error case
     let err = picomatch_rs::is_match("foo", "", &default_compile_options()).unwrap_err();
     assert!(matches!(err, picomatch_rs::MatchError::EmptyPattern));
 }
