@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
-      npm_published: ${{ steps.meta.outputs.npm_published }}
       crate_published: ${{ steps.meta.outputs.crate_published }}
     steps:
       - name: Checkout repository
@@ -51,12 +50,6 @@ jobs:
             exit 1
           fi
 
-          if npm view "@maidang1/picomatch-rs@$version" version >/dev/null 2>&1; then
-            npm_published=true
-          else
-            npm_published=false
-          fi
-
           if curl --fail --silent --show-error "https://crates.io/api/v1/crates/picomatch-rs/$version" >/dev/null; then
             crate_published=true
           else
@@ -64,108 +57,7 @@ jobs:
           fi
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "npm_published=$npm_published" >> "$GITHUB_OUTPUT"
           echo "crate_published=$crate_published" >> "$GITHUB_OUTPUT"
-
-  build-node-binaries:
-    name: Build addon @ ${{ matrix.target.name }}
-    needs: validate-release
-    if: needs.validate-release.outputs.npm_published != 'true'
-    runs-on: ${{ matrix.target.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - name: linux-x64
-            runner: ubuntu-latest
-            binary: picomatch-rs.linux-x64.node
-          - name: linux-arm64
-            runner: ubuntu-24.04-arm
-            binary: picomatch-rs.linux-arm64.node
-          - name: windows-x64
-            runner: windows-latest
-            binary: picomatch-rs.win32-x64.node
-          - name: windows-arm64
-            runner: windows-11-arm
-            binary: picomatch-rs.win32-arm64.node
-          - name: darwin-x64
-            runner: macos-15-intel
-            binary: picomatch-rs.darwin-x64.node
-          - name: darwin-arm64
-            runner: macos-latest
-            binary: picomatch-rs.darwin-arm64.node
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install npm dependencies
-        run: npm install
-
-      - name: Build addon
-        run: npm run build
-
-      - name: Run smoke test
-        run: npm run mocha -- test/smoke.js
-
-      - name: Upload native binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-addon-${{ matrix.target.name }}
-          path: ${{ matrix.target.binary }}
-          if-no-files-found: error
-
-  publish-npm:
-    name: Publish npm package
-    needs:
-      - validate-release
-      - build-node-binaries
-    if: needs.validate-release.outputs.npm_published != 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download native binaries
-        uses: actions/download-artifact@v4
-        with:
-          pattern: native-addon-*
-          merge-multiple: true
-
-      - name: Verify packaged binaries
-        run: |
-          set -euo pipefail
-          for file in \
-            picomatch-rs.linux-x64.node \
-            picomatch-rs.linux-arm64.node \
-            picomatch-rs.win32-x64.node \
-            picomatch-rs.win32-arm64.node \
-            picomatch-rs.darwin-x64.node \
-            picomatch-rs.darwin-arm64.node
-          do
-            test -f "$file"
-          done
-
-      - name: Setup Node.js for npm publish
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-
-      - name: Publish package to npm
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-crate:
     name: Publish crates.io package
