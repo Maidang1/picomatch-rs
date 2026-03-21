@@ -49,6 +49,11 @@ Required GitHub repository secret:
 
 - `CARGO_REGISTRY_TOKEN`
 
+## Test
+via napi-rs, 100% test cases passed 
+<img width="1628" height="890" alt="image" src="https://github.com/user-attachments/assets/bed7296b-139f-4d7f-9f39-b34697cea5c5" />
+
+
 ## License
 
 MIT
