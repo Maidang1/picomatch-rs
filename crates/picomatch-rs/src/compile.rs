@@ -473,41 +473,33 @@ pub fn regex_output_for_engine(output: &str) -> String {
 
 fn has_regex_chars(input: &str) -> bool {
     input.chars().any(|ch| {
-        matches!(
-            ch,
-            '-' | '*' | '+' | '?' | '.' | '^' | '$' | '{' | '}' | '(' | ')' | '|' | '[' | ']'
-        )
+        matches!(ch, '-' | '*' | '+' | '?' | '.' | '^' | '$' | '{' | '}' | '(' | ')' | '|' | '[' | ']')
     })
 }
 
 fn escape_literal(input: &str) -> String {
     let mut output = String::with_capacity(input.len() * 2);
     for ch in input.chars() {
-        let escaped = escape_regex_char(ch);
-        if escaped.is_empty() {
-            if ch == '\\' {
-                output.push_str("\\\\");
-            } else {
+        match ch {
+            '\\' => output.push_str("\\\\"),
+            '$' | '(' | ')' | '*' | '+' | '.' | '?' | '[' | ']' | '^' | '{' | '|' | '}' => {
+                output.push('\\');
                 output.push(ch);
             }
-        } else {
-            output.push_str(escaped);
+            _ => output.push(ch),
         }
     }
     output
 }
 
 fn push_literal_char(output: &mut String, ch: char) {
-    if ch == '\\' {
-        output.push_str("\\\\");
-        return;
-    }
-
-    let escaped = escape_regex_char(ch);
-    if escaped.is_empty() {
-        output.push(ch);
-    } else {
-        output.push_str(escaped);
+    match ch {
+        '\\' => output.push_str("\\\\"),
+        '$' | '(' | ')' | '*' | '+' | '.' | '?' | '[' | ']' | '^' | '{' | '|' | '}' => {
+            output.push('\\');
+            output.push(ch);
+        }
+        _ => output.push(ch),
     }
 }
 
@@ -532,26 +524,19 @@ fn sanitize_nested_negation(input: &str, strip_terminal_anchor: bool) -> String 
 
 fn contains_magic(input: &str) -> bool {
     let mut escaped = false;
-
     for ch in input.chars() {
         if escaped {
             escaped = false;
             continue;
         }
-
         if ch == '\\' {
             escaped = true;
             continue;
         }
-
-        if matches!(
-            ch,
-            '*' | '?' | '[' | ']' | '{' | '}' | '(' | ')' | '@' | '!'
-        ) {
+        if matches!(ch, '*' | '?' | '[' | ']' | '{' | '}' | '(' | ')' | '@' | '!') {
             return true;
         }
     }
-
     false
 }
 
