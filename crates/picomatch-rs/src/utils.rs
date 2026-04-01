@@ -5,49 +5,40 @@ pub fn is_path_separator(ch: char) -> bool {
 }
 
 pub fn remove_backslashes(input: &str) -> String {
-    let chars: Vec<char> = input.chars().collect();
     let mut result = String::with_capacity(input.len());
-    let mut index = 0;
+    let mut chars = input.chars().peekable();
 
-    while index < chars.len() {
-        let ch = chars[index];
-
+    while let Some(ch) = chars.next() {
         if ch == '[' {
             result.push(ch);
-            index += 1;
 
-            while index < chars.len() {
-                let current = chars[index];
+            while let Some(current) = chars.next() {
                 result.push(current);
 
-                if current == CHAR_BACKWARD_SLASH && index + 1 < chars.len() {
-                    index += 1;
-                    result.push(chars[index]);
+                if current == CHAR_BACKWARD_SLASH {
+                    if let Some(escaped) = chars.next() {
+                        result.push(escaped);
+                    }
                 } else if current == ']' {
-                    index += 1;
                     break;
                 }
-
-                index += 1;
             }
 
             continue;
         }
 
-        if ch == CHAR_BACKWARD_SLASH && index + 1 < chars.len() {
-            if chars[index + 1] == '[' {
-                index += 1;
-                continue;
-            }
+        if ch == CHAR_BACKWARD_SLASH && chars.peek() == Some(&'[') {
+            continue;
+        }
 
-            index += 1;
-            result.push(chars[index]);
-            index += 1;
+        if ch == CHAR_BACKWARD_SLASH {
+            if let Some(next) = chars.next() {
+                result.push(next);
+            }
             continue;
         }
 
         result.push(ch);
-        index += 1;
     }
 
     result
