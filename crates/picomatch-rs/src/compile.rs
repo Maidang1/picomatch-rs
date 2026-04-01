@@ -504,22 +504,22 @@ fn push_literal_char(output: &mut String, ch: char) {
 }
 
 fn sanitize_nested_negation(input: &str, strip_terminal_anchor: bool) -> String {
-    let mut output = input.to_string();
+    let mut output = input;
 
     if let Some(stripped) = output.strip_prefix("(?=.)") {
-        output = stripped.to_string();
+        output = stripped;
     }
 
     if let Some(stripped) = output.strip_suffix("/?") {
-        output = stripped.to_string();
+        output = stripped;
     }
 
     if strip_terminal_anchor {
-        output = output.replace("$))", "))");
-        output = output.replace("$)", ")");
+        let replaced = output.replace("$))", "))").replace("$)", ")");
+        return replaced;
     }
 
-    output
+    output.to_string()
 }
 
 fn contains_magic(input: &str) -> bool {
@@ -549,36 +549,44 @@ fn dot_segment_guard(options: &CompileOptions) -> &'static str {
 }
 
 fn has_explicit_dot_segment(input: &str, options: &CompileOptions) -> bool {
+    let mut segment_start = 0usize;
+    let mut segment_len = 0usize;
     let chars: Vec<char> = input.chars().collect();
-    let mut current = String::new();
-    let mut index = 0usize;
 
-    while index <= chars.len() {
-        let ch = chars.get(index).copied();
-
-        if let Some(value) = ch {
-            if value == '\\' && index + 1 < chars.len() && !options.windows {
-                current.push(value);
-                current.push(chars[index + 1]);
-                index += 2;
-                continue;
-            }
-
-            if is_separator(value, options) {
-                if current == "." || current == ".." {
-                    return true;
-                }
-                current.clear();
-                index += 1;
-                continue;
-            }
-
-            current.push(value);
-            index += 1;
+    for (index, &ch) in chars.iter().enumerate() {
+        if ch == '\\' && index + 1 < chars.len() && !options.windows {
+            segment_len += 2;
             continue;
         }
 
-        return current == "." || current == "..";
+        if is_separator(ch, options) {
+            if segment_len == 1 && chars[segment_start] == '.' {
+                return true;
+            }
+            if segment_len == 2
+                && segment_start + 1 < chars.len()
+                && chars[segment_start] == '.'
+                && chars[segment_start + 1] == '.'
+            {
+                return true;
+            }
+            segment_start = index + 1;
+            segment_len = 0;
+            continue;
+        }
+
+        segment_len += 1;
+    }
+
+    if segment_len == 1 && segment_start < chars.len() && chars[segment_start] == '.' {
+        return true;
+    }
+    if segment_len == 2
+        && segment_start + 1 < chars.len()
+        && chars[segment_start] == '.'
+        && chars[segment_start + 1] == '.'
+    {
+        return true;
     }
 
     false

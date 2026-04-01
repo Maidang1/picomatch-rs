@@ -93,7 +93,12 @@ struct InputView<'a> {
 impl<'a> InputView<'a> {
     fn new(raw: &'a str) -> Self {
         let chars: Vec<char> = raw.chars().collect();
-        let mut offsets = raw.char_indices().map(|(idx, _)| idx).collect::<Vec<_>>();
+        let mut offsets: Vec<usize> = Vec::with_capacity(chars.len() + 1);
+        let mut pos = 0usize;
+        for ch in raw.chars() {
+            offsets.push(pos);
+            pos += ch.len_utf8();
+        }
         offsets.push(raw.len());
         Self {
             raw,
@@ -102,10 +107,12 @@ impl<'a> InputView<'a> {
         }
     }
 
+    #[inline]
     fn len(&self) -> usize {
         self.chars.len()
     }
 
+    #[inline]
     fn char_at(&self, index: usize) -> Option<char> {
         self.chars.get(index).copied()
     }

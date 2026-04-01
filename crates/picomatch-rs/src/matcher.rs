@@ -21,16 +21,14 @@ impl Matcher {
             return Ok(false);
         }
 
-        let output = normalize_input(input, &self.options);
-
-        if input == self.glob || output == self.glob {
+        if input == self.glob {
             return Ok(true);
         }
 
         let candidate = if self.options.match_base || self.options.basename {
             basename(input, self.options.windows)
         } else {
-            output
+            input.to_string()
         };
 
         self.regex
@@ -57,19 +55,10 @@ pub fn compile_matcher(pattern: &str, options: &CompileOptions) -> Result<Matche
 }
 
 fn regex_source(source: &str, flags: &str) -> String {
-    if flags.is_empty() {
-        return source.to_string();
-    }
-
-    let mut inline = String::new();
     if flags.contains('i') {
-        inline.push('i');
-    }
-
-    if inline.is_empty() {
-        source.to_string()
+        format!("(?i){source}")
     } else {
-        format!("(?{inline}){source}")
+        source.to_string()
     }
 }
 
@@ -94,24 +83,11 @@ where
     Ok(false)
 }
 
-fn normalize_input(input: &str, options: &CompileOptions) -> String {
-    let _ = options;
-    input.to_string()
-}
-
 fn basename(input: &str, windows: bool) -> String {
-    let parts: Vec<&str> = if windows {
-        input.split(['/', '\\']).collect()
-    } else {
-        input.split('/').collect()
-    };
-
-    match parts.last().copied() {
-        Some("") => parts
-            .get(parts.len().saturating_sub(2))
-            .copied()
-            .unwrap_or_default()
-            .to_string(),
+    let sep: &[char] = if windows { &['/', '\\'] } else { &['/'] };
+    let mut parts = input.rsplit(sep);
+    match parts.next() {
+        Some("") => parts.next().unwrap_or_default().to_string(),
         Some(value) => value.to_string(),
         None => String::new(),
     }
