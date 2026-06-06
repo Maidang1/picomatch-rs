@@ -473,21 +473,17 @@ pub fn regex_output_for_engine(output: &str) -> String {
 
 fn has_regex_chars(input: &str) -> bool {
     input.chars().any(|ch| {
-        matches!(ch, '-' | '*' | '+' | '?' | '.' | '^' | '$' | '{' | '}' | '(' | ')' | '|' | '[' | ']')
+        matches!(
+            ch,
+            '-' | '*' | '+' | '?' | '.' | '^' | '$' | '{' | '}' | '(' | ')' | '|' | '[' | ']'
+        )
     })
 }
 
 fn escape_literal(input: &str) -> String {
     let mut output = String::with_capacity(input.len() * 2);
     for ch in input.chars() {
-        match ch {
-            '\\' => output.push_str("\\\\"),
-            '$' | '(' | ')' | '*' | '+' | '.' | '?' | '[' | ']' | '^' | '{' | '|' | '}' => {
-                output.push('\\');
-                output.push(ch);
-            }
-            _ => output.push(ch),
-        }
+        push_literal_char(&mut output, ch);
     }
     output
 }
@@ -533,7 +529,10 @@ fn contains_magic(input: &str) -> bool {
             escaped = true;
             continue;
         }
-        if matches!(ch, '*' | '?' | '[' | ']' | '{' | '}' | '(' | ')' | '@' | '!') {
+        if matches!(
+            ch,
+            '*' | '?' | '[' | ']' | '{' | '}' | '(' | ')' | '@' | '!'
+        ) {
             return true;
         }
     }
@@ -1365,9 +1364,8 @@ fn compile_body_with_context(
                         } else {
                             String::new()
                         };
-                        output.push_str(&format!(
-                            "{leading}(?:{globstar}(?:{slash}+{globstar})*)?",
-                        ));
+                        output
+                            .push_str(&format!("{leading}(?:{globstar}(?:{slash}+{globstar})*)?",));
                     }
                     segment_start = false;
                     last_was_wildcard = true;

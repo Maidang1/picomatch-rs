@@ -28,11 +28,11 @@ impl Matcher {
         let candidate = if self.options.match_base || self.options.basename {
             basename(input, self.options.windows)
         } else {
-            input.to_string()
+            input
         };
 
         self.regex
-            .is_match(&candidate)
+            .is_match(candidate)
             .map_err(|err| MatchError::InvalidRegex(err.to_string()))
     }
 }
@@ -83,13 +83,15 @@ where
     Ok(false)
 }
 
-fn basename(input: &str, windows: bool) -> String {
+fn basename(input: &str, windows: bool) -> &str {
     let sep: &[char] = if windows { &['/', '\\'] } else { &['/'] };
     let mut parts = input.rsplit(sep);
     match parts.next() {
-        Some("") => parts.next().unwrap_or_default().to_string(),
-        Some(value) => value.to_string(),
-        None => String::new(),
+        // A trailing separator yields an empty final segment; fall back to the
+        // segment before it (e.g. "a/b/" -> "b").
+        Some("") => parts.next().unwrap_or_default(),
+        Some(value) => value,
+        None => "",
     }
 }
 

@@ -92,12 +92,11 @@ struct InputView<'a> {
 
 impl<'a> InputView<'a> {
     fn new(raw: &'a str) -> Self {
-        let chars: Vec<char> = raw.chars().collect();
-        let mut offsets: Vec<usize> = Vec::with_capacity(chars.len() + 1);
-        let mut pos = 0usize;
-        for ch in raw.chars() {
-            offsets.push(pos);
-            pos += ch.len_utf8();
+        let mut chars: Vec<char> = Vec::with_capacity(raw.len());
+        let mut offsets: Vec<usize> = Vec::with_capacity(raw.len() + 1);
+        for (offset, ch) in raw.char_indices() {
+            chars.push(ch);
+            offsets.push(offset);
         }
         offsets.push(raw.len());
         Self {
@@ -468,10 +467,12 @@ pub fn scan(input: &str, options: &ScanOptions) -> ScanState {
         glob = str.clone();
     }
 
-    if !base.is_empty() && base != "/" && base != str {
-        if base.chars().last().is_some_and(is_path_separator) {
-            base.pop();
-        }
+    if !base.is_empty()
+        && base != "/"
+        && base != str
+        && base.chars().last().is_some_and(is_path_separator)
+    {
+        base.pop();
     }
 
     if options.unescape {
